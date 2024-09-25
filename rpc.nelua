@@ -1,0 +1,40 @@
+require 'utils.json'
+require 'string'
+
+global rpc = @record{}
+
+local Message = @record{
+  id: 1,
+  jsonrpc: string
+}
+
+function rpc.encode(msg: Message): (boolean, string)
+  local content = json.emit(msg)
+
+  if content == nil then
+    return true, ""
+  end
+  
+  local result = "Content-Length: " .. #content .. "\r\n\r\n" .. content
+  return false, result
+end
+
+function rpc.decode(msg: string): (boolean, hashmap(string,string), integer)
+  local matched, result = string.match(msg,"(.-)\r\n\r\n(.*)")
+
+  if not matched then
+    return true ,{}, 0
+  end
+
+  local header: string = result[1]
+  local content: string = result[2]
+
+  local request, err = json.parse(content, @hashmap(string,string))
+  
+  if err ~= "" then
+    return true, {}, 0
+  end
+  return false, request, #content
+end
+
+return rpc

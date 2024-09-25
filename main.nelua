@@ -1,0 +1,10 @@
+require "rpc"
+
+local err, result = rpc.encode({
+	jsonrpc = "2.0"
+	id = 1,
+})
+
+local err, result2, len = rpc.decode(result)
+
+print(result)
