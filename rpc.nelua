@@ -1,40 +1,24 @@
-require 'utils.json'
 require 'string'
+require 'utils.cjson'
+
 
 global rpc = @record{}
 
-local Message = @record{
-  id: 1,
-  jsonrpc: string
-}
+function rpc.decode(msg: string): (*cJSON, integer, string)
+  local matched, matched_strings= msg:match("(.-)\r\n\r\n(.*)")
 
-function rpc.encode(msg: Message): (boolean, string)
-  local content = json.emit(msg)
+  local header = matched_strings[1]
+  local content = matched_strings[2]
 
-  if content == nil then
-    return true, ""
+  local result: *cJSON = cJSON_Parse(content)
+
+  if not result then
+    return result, 0, "Failed to parse JSON"
   end
   
-  local result = "Content-Length: " .. #content .. "\r\n\r\n" .. content
-  return false, result
+  return result, #content, ""
 end
 
-function rpc.decode(msg: string): (boolean, hashmap(string,string), integer)
-  local matched, result = string.match(msg,"(.-)\r\n\r\n(.*)")
+function rpc.encode(obj: *cJSON)
 
-  if not matched then
-    return true ,{}, 0
-  end
-
-  local header: string = result[1]
-  local content: string = result[2]
-
-  local request, err = json.parse(content, @hashmap(string,string))
-  
-  if err ~= "" then
-    return true, {}, 0
-  end
-  return false, request, #content
 end
-
-return rpc

@@ -1,0 +1,25 @@
+## linklib "cjson"
+## cinclude "<cjson/cJSON.h>"
+
+global cJSON = @record{
+	next: *cJSON,
+	prev: *cJSON,
+	child: *cJSON,
+	type: cint,
+	valuestring: cstring,
+	valueint: cint,
+	valuedouble: number,
+	string: cstring,	
+}
+
+global function cJSON_Parse(s: cstring): *cJSON <cimport, nodecl> end
+global function cJSON_Print(item: *cJSON): cstring <cimport, nodecl> end
+
+global function cJSON_GetObjectItem(obj: *cJSON, s: cstring): *cJSON <cimport, nodecl> end
+
+global function cJSON_CreateObject(): *cJSON <cimport, nodecl> end
+global function cJSON_CreateString(s: cstring): *cJSON <cimport, nodecl> end
+global function cJSON_CreateArray(): *cJSON <cimport, nodecl> end
+
+global function cJSON_AddItemToArray(arr: *cJSON, item: *cJSON): cint <cimport, nodecl> end
+global function cJSON_AddItemToObject(obj: *cJSON, s: cstring, item: *cJSON): cint <cimport, nodecl> end

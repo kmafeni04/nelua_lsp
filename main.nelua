@@ -1,10 +1,43 @@
-require "rpc"
+require 'rpc'
+require 'io'
+require 'os'
 
-local err, result = rpc.encode({
-	jsonrpc = "2.0"
-	id = 1,
-})
+## linklib "cjson"
+## cinclude "<cjson/cJSON.h>"
 
-local err, result2, len = rpc.decode(result)
+do
+  local log_file = io.open("lsp.log", "w")
+  local date = os.date("%Y/%m/%d", os.time())
+  local time = os.date("%X", os.time())
+  local logged_file = #[debug.getinfo(1).source]#
+  local line = #[debug.getinfo(1).currentline]#
+  assert(log_file):write(("[lua_lsp] "..date .. " " .. time .. " ".. " " .. logged_file .. ":" .. line .. ":" .. " Started\n"))
+  assert(log_file):close()
+end
 
-print(result)
+local function log(msg: string) 
+  local log_file = io.open("lsp.log", "a")
+  local date = os.date("%Y/%m/%d", os.time())
+  local time = os.date("%X", os.time())
+  local logged_file = #[debug.getinfo(1).source]#
+  local line = #[debug.getinfo(1).currentline]#
+  assert(log_file):write(("[lua_lsp] "..date .. " " .. time .. " ".. " " .. logged_file .. ":" .. line .. ": " .. msg .. "\n"))
+  assert(log_file):close()
+end
+
+local stdin: string
+
+while true do
+	stdin = stdin .. io.read(1)
+	local request, content_len, err = rpc.decode(stdin)
+	if err == "" then
+		local method_obj = cJSON_GetObjectItem(request, "method") 
+		local method = method_obj.valuestring
+		log("Method: " .. method)
+		if method == "initialize" then
+			local response = cJSON_CreateObject()
+		end
+	
+		stdin = ""
+	end
+end
