@@ -34,7 +34,7 @@ while true do
 		local request_method_obj = cJSON_GetObjectItem(request, "method") 
 		local request_method = request_method_obj.valuestring
 		local request_id_obj = cJSON_GetObjectItem(request, "id") 
-		local request_id 
+		local request_id: integer
 		if cJSON_IsNumber(request_id_obj) == 1 then
 			request_id = request_id_obj.valueint
 		end
@@ -48,6 +48,18 @@ while true do
 
 		if request_method == "textDocument/hover" then
 			io.write(response.hover(request_id))
+			io.flush()
+		end
+
+		if request_method == "textDocument/definition" then
+			local request_params = cJSON_GetObjectItem(request, "params") 
+			local request_textDocument = cJSON_GetObjectItem(request_params , "textDocument") 
+			local request_uri = cJSON_GetObjectItem(request_textDocument , "uri") 
+			local uri: string
+			if cJSON_IsString(request_uri) == 1 then
+				uri = request_uri.valuestring
+			end
+			io.write(response.definition(uri,request_id))
 			io.flush()
 		end
 	

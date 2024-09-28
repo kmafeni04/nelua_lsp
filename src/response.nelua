@@ -1,10 +1,37 @@
 require '.rpc'
 
 global response = @record{}
+
 local function base_message(obj: *cJSON, request_id: number)
   cJSON_AddItemToObject(obj, "jsonrpc", cJSON_CreateString("2.0"))
   cJSON_AddItemToObject(obj, "id", cJSON_CreateNumber(request_id))
 end
+
+local function create_position(l: integer, c:integer): *cJSON
+  local position = cJSON_CreateObject()
+
+  local line = cJSON_CreateNumber(l)
+  local character = cJSON_CreateNumber(c)
+
+  cJSON_AddItemToObject(position, "line", line)
+  cJSON_AddItemToObject(position, "character", character)
+
+  return position
+end
+
+local function create_range(s_line: integer, s_char: integer, e_line: integer, e_char: integer): *cJSON
+  local range = cJSON_CreateObject()
+
+  local range_start = create_position(s_line, s_char)
+  local range_end = create_position(e_line, e_char)
+
+  cJSON_AddItemToObject(range, "start", range_start)
+  cJSON_AddItemToObject(range, "end", range_end)
+
+  return range
+end
+
+
 
 function response.initialize(request_id: number): string
   local initialize_response = cJSON_CreateObject()
@@ -12,8 +39,15 @@ function response.initialize(request_id: number): string
   base_message(initialize_response, request_id)
   
   local result = cJSON_CreateObject()
+
   local capabilities = cJSON_CreateObject()
-  cJSON_AddItemToObject(capabilities, "hoverProvider", cJSON_CreateBool(1))
+
+  local hover_provider = cJSON_CreateBool(1)
+  cJSON_AddItemToObject(capabilities, "hoverProvider", hover_provider)
+
+  local definition_provider = cJSON_CreateBool(1)
+  cJSON_AddItemToObject(capabilities, "definitionProvider", definition_provider)
+
   cJSON_AddItemToObject(result, "capabilities", capabilities)
   
   local server_info = cJSON_CreateObject()
@@ -42,5 +76,24 @@ function response.hover(request_id: number): string
 
   local response = rpc.encode(hover_response)
   cJSON_Delete(hover_response)
+  return response
+end
+
+function response.definition(uri: string, request_id: number): string
+  local definition_response = cJSON_CreateObject()
+
+  base_message(definition_response, request_id)
+  local result = cJSON_CreateObject()
+ 
+  local file_uri = cJSON_CreateString(uri)
+  local range = create_range(0, 0, 0, 0)
+
+  cJSON_AddItemToObject(result, "uri", file_uri)
+  cJSON_AddItemToObject(result, "range", range)
+
+  cJSON_AddItemToObject(definition_response, "result", result)
+
+  local response = rpc.encode(definition_response)
+  cJSON_Delete(definition_response)
   return response
 end
