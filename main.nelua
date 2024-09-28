@@ -42,14 +42,18 @@ while true do
 		log("Method: " .. request_method)
 
 		if request_method == "initialize" then
-			local response = response.initialize(request_id)
-			io.write(response)
+			io.write(response.initialize(request_id))
+			io.flush()
+		end
+
+		if request_method == "textDocument/hover" then
+			io.write(response.hover(request_id))
 			io.flush()
 		end
 	
 		if request_method == "shutdown" then
 			cJSON_Delete(request)
-			os.exit(0)
+			os.exit()
 		end
 
 		cJSON_Delete(request)
