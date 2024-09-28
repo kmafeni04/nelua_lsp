@@ -1,0 +1,26 @@
+require '.rpc'
+
+global response = @record{}
+
+function response.initialize(request_id: number): string
+  local initialize_response = cJSON_CreateObject()
+  cJSON_AddItemToObject(initialize_response, "jsonrpc", cJSON_CreateString("2.0"))
+  cJSON_AddItemToObject(initialize_response, "id", cJSON_CreateNumber(request_id))
+  
+  local result = cJSON_CreateObject()
+  local capabilities = cJSON_CreateObject()
+  cJSON_AddItemToObject(capabilities, "hoverProvider", cJSON_CreateBool(1))
+  cJSON_AddItemToObject(result, "capabilities", capabilities)
+  
+  local server_info = cJSON_CreateObject()
+  cJSON_AddItemToObject(server_info, "name", cJSON_CreateString("nelua-lsp"))
+  cJSON_AddItemToObject(server_info, "version", cJSON_CreateString("0.0.1"))
+  cJSON_AddItemToObject(result, "serverInfo", server_info)
+  
+  cJSON_AddItemToObject(initialize_response, "result", result)
+  
+  local response = rpc.encode(initialize_response)
+  cJSON_Delete(initialize_response)
+  return response
+end
+

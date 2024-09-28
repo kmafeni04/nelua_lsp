@@ -1,9 +1,8 @@
-require 'rpc'
 require 'io'
 require 'os'
 
-## linklib "cjson"
-## cinclude "<cjson/cJSON.h>"
+require 'src.rpc'
+require 'src.response'
 
 do
   local log_file = io.open("lsp.log", "w")
@@ -29,15 +28,31 @@ local stdin: string
 
 while true do
 	stdin = stdin .. io.read(1)
+	
 	local request, content_len, err = rpc.decode(stdin)
 	if err == "" then
-		local method_obj = cJSON_GetObjectItem(request, "method") 
-		local method = method_obj.valuestring
-		log("Method: " .. method)
-		if method == "initialize" then
-			local response = cJSON_CreateObject()
+		local request_method_obj = cJSON_GetObjectItem(request, "method") 
+		local request_method = request_method_obj.valuestring
+		local request_id_obj = cJSON_GetObjectItem(request, "id") 
+		local request_id 
+		if cJSON_IsNumber(request_id_obj) == 1 then
+			request_id = request_id_obj.valueint
+		end
+
+		log("Method: " .. request_method)
+
+		if request_method == "initialize" then
+			local response = response.initialize(request_id)
+			io.write(response)
+			io.flush()
 		end
 	
+		if request_method == "shutdown" then
+			cJSON_Delete(request)
+			os.exit(0)
+		end
+
+		cJSON_Delete(request)
 		stdin = ""
 	end
 end

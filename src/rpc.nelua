@@ -20,5 +20,8 @@ function rpc.decode(msg: string): (*cJSON, integer, string)
 end
 
 function rpc.encode(obj: *cJSON)
+  local json = cJSON_PrintUnformatted(obj)
+  local result = "Content-Length: " .. #json .. "\r\n\r\n" .. json
 
+  return result
 end
