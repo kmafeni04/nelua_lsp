@@ -11,7 +11,7 @@ require 'src.response'
 	  local time = os.date("%X", os.time())
 	  local logged_file = #[debug.getinfo(1).source]#
 	  local line = #[debug.getinfo(1).currentline]#
-	  assert(log_file):write(("[lua_lsp] "..date .. " " .. time .. " ".. " " .. logged_file .. ":" .. line .. ":" .. " Started\n"))
+	  assert(log_file):write(("[lua_lsp] " .. date .. " " .. time .. "  " .. logged_file .. ":" .. line .. ":" .. " Started\n"))
 	  assert(log_file):close()
 	end
 
@@ -21,7 +21,7 @@ require 'src.response'
 	  local time = os.date("%X", os.time())
 	  local logged_file = #[debug.getinfo(1).source]#
 	  local line = #[debug.getinfo(1).currentline]#
-	  assert(log_file):write(("[lua_lsp] "..date .. " " .. time .. " ".. " " .. logged_file .. ":" .. line .. ": " .. msg .. "\n"))
+	  assert(log_file):write(("[lua_lsp] " .. date .. " " .. time .. "  " .. logged_file .. ":" .. line .. ": " .. msg .. "\n"))
 	  assert(log_file):close()
 	end
 ## else
@@ -51,7 +51,8 @@ while true do
 		end
 
 		if request_method == "textDocument/hover" then
-			io.write(response.hover(request_id))
+			local response = response.hover(request_id)
+			io.write(response)
 			io.flush()
 		end
 
@@ -63,7 +64,14 @@ while true do
 			if cJSON_IsString(request_uri) == 1 then
 				uri = request_uri.valuestring
 			end
-			io.write(response.definition(uri,request_id))
+			local response = response.definition(uri, request_id) 
+			io.write(response)
+			io.flush()
+		end
+
+		if request_method == "textDocument/completion" then
+			local response = response.completion(request_id) 
+			io.write(response)
 			io.flush()
 		end
 	

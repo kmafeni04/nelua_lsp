@@ -23,15 +23,13 @@ local function create_range(s_line: integer, s_char: integer, e_line: integer, e
   local range = cJSON_CreateObject()
 
   local range_start = create_position(s_line, s_char)
-  local range_end = create_position(e_line, e_char)
-
   cJSON_AddItemToObject(range, "start", range_start)
+
+  local range_end = create_position(e_line, e_char)
   cJSON_AddItemToObject(range, "end", range_end)
 
   return range
 end
-
-
 
 function response.initialize(request_id: number): string
   local initialize_response = cJSON_CreateObject()
@@ -47,6 +45,9 @@ function response.initialize(request_id: number): string
 
   local definition_provider = cJSON_CreateBool(1)
   cJSON_AddItemToObject(capabilities, "definitionProvider", definition_provider)
+
+  local completion_provider = cJSON_CreateObject()
+  cJSON_AddItemToObject(capabilities, "completionProvider", completion_provider)
 
   cJSON_AddItemToObject(result, "capabilities", capabilities)
   
@@ -86,14 +87,35 @@ function response.definition(uri: string, request_id: number): string
   local result = cJSON_CreateObject()
  
   local file_uri = cJSON_CreateString(uri)
-  local range = create_range(0, 0, 0, 0)
-
   cJSON_AddItemToObject(result, "uri", file_uri)
+
+  local range = create_range(0, 0, 0, 0)
   cJSON_AddItemToObject(result, "range", range)
 
   cJSON_AddItemToObject(definition_response, "result", result)
 
   local response = rpc.encode(definition_response)
   cJSON_Delete(definition_response)
+  return response
+end
+
+function response.completion(request_id: number): string
+  local completion_response = cJSON_CreateObject()
+
+  base_message(completion_response, request_id)
+  local result = cJSON_CreateArray()
+
+  local completion_require = cJSON_CreateObject()
+  local require_label = cJSON_CreateString("require")
+  cJSON_AddItemToObject(completion_require, "label", require_label)
+  local require_insert_text = cJSON_CreateString("require")
+  cJSON_AddItemToObject(completion_require, "insertText", require_insert_text)
+
+  cJSON_AddItemToArray(result, completion_require)
+
+  cJSON_AddItemToObject(completion_response, "result", result)
+
+  local response = rpc.encode(completion_response)
+  cJSON_Delete(completion_response)
   return response
 end
