@@ -92,6 +92,9 @@ function response.definition(uri: string, request_id: number): string
   local range = create_range(0, 0, 0, 0)
   cJSON_AddItemToObject(result, "range", range)
 
+  local def_error = cJSON_CreateString("No definition found")
+  cJSON_AddItemToObject(result, "error", def_error)
+
   cJSON_AddItemToObject(definition_response, "result", result)
 
   local response = rpc.encode(definition_response)

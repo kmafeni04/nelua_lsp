@@ -42,6 +42,7 @@ while true do
 		if cJSON_IsNumber(request_id_obj) == 1 then
 			request_id = request_id_obj.valueint
 		end
+		local request_params = cJSON_GetObjectItem(request, "params") 
 
 		log("Method: " .. request_method)
 
@@ -57,15 +58,77 @@ while true do
 		end
 
 		if request_method == "textDocument/definition" then
-			local request_params = cJSON_GetObjectItem(request, "params") 
-			local request_textDocument = cJSON_GetObjectItem(request_params , "textDocument") 
-			local request_uri = cJSON_GetObjectItem(request_textDocument , "uri") 
-			local uri: string
-			if cJSON_IsString(request_uri) == 1 then
-				uri = request_uri.valuestring
+			local request_position = cJSON_GetObjectItem(request_params , "position") 
+			local position_line = cJSON_GetObjectItem(request_position, "line") 
+			local position_character = cJSON_GetObjectItem(request_position, "charachter") 
+			local current_line: integer
+			local current_character: integer
+			if cJSON_IsNumber(position_line) == 1 then
+				current_line = position_line.valueint
 			end
-			local response = response.definition(uri, request_id) 
-			io.write(response)
+			if cJSON_IsNumber(position_character) == 1 then
+				current_character = position_character.valueint
+			end
+
+			local root_uri_prog = io.popen("git rev-parse --show-toplevel")
+			local root_uri: string = root_uri_prog:read()
+			if root_uri:match("[/]") then
+			end
+
+			local request_textDocument = cJSON_GetObjectItem(request_params , "textDocument") 
+			local textDocument_uri = cJSON_GetObjectItem(request_textDocument , "uri") 
+ 			local current_file_uri: string
+			if cJSON_IsString(textDocument_uri) == 1 then
+				current_file_uri = textDocument_uri.valuestring
+			end
+
+			local go_to_definition: string
+			local go_to_file: string = "file://"
+			local _, current_file_path = current_file_uri:match("^%.?(%S+)://(.+)$")
+			local file_to_read = io.open(current_file_path[2], "r")
+			if file_to_read:isopen() then
+				log("File was opened")
+				local line_num = 0
+				for line in file_to_read:lines() do
+					if line_num == current_line then
+						if line:match('require') then
+							local root_require_matched, root_require_seq = line:match("^.*require ['\"](%w+%.*%w*)['\"]$")
+							local same_require_matched, same_require_seq = line:match("^.*require ['\"]%.(%w+%.*%w*)['\"]$")
+							if root_require_matched then
+								local require_path = root_require_seq[1]:gsub("%.","/") .. ".nelua"
+								local git_paths = io.popen("git ls-files")
+								for path in git_paths:lines() do
+									if path == require_path then
+										go_to_file = go_to_file .. root_uri .. "/" .. require_path
+										log(go_to_file)
+										go_to_definition = response.definition(go_to_file, request_id) 
+									end
+								end
+							end
+							if same_require_matched then
+								local _, current_dir_seq = current_file_uri:match("^file://(.*)/[^/]+%.nelua$") 
+								local uri_sub = current_dir_seq[1]:sub(#root_uri + 1):sub(2)
+								local require_path = uri_sub .. "/" .. same_require_seq[1]:gsub("%.","/") .. ".nelua"
+								log(require_path)
+								local git_paths = io.popen("git ls-files")
+								for path in git_paths:lines() do
+									if path == require_path then
+										go_to_file = go_to_file .. root_uri .. "/" .. require_path
+										log(go_to_file)
+										go_to_definition = response.definition(go_to_file, request_id) 
+									end
+								end
+							end
+						end
+					end
+					line_num = line_num + 1
+				end
+				file_to_read:close()
+			else
+				log("File wasn't opened")
+			end
+			
+			io.write(go_to_definition)
 			io.flush()
 		end
 
