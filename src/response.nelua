@@ -99,19 +99,103 @@ function response.definition(uri: string, request_id: number): string
   return response
 end
 
+local CompletionItemKind = @enum {
+	Text = 1,
+	Method,
+	Function,
+	Constructor,
+	Field,
+	Variable,
+	Class,
+	Interface,
+	Module,
+	Property,
+	Unit,
+	Value,
+	Enum,
+	Keyword,
+	Snippet,
+	Color,
+	File,
+	Reference,
+	Folder,
+	EnumMember,
+	Constant,
+	Struct,
+	Event,
+	Operator,
+	TypeParameter,
+}
+
+local InsertTextFormat = @enum{
+  PlainText = 1,
+  Snippet
+}
+
+local function create_completion(doc: string, label: string, insert_t: string, insert_t_f: integer, comp_kind: integer): *cJSON
+  local obj = cJSON_CreateObject()
+  cJSON_AddItemToObject(obj, "documentation", cJSON_CreateString(doc))
+  cJSON_AddItemToObject(obj, "label", cJSON_CreateString(label))
+  cJSON_AddItemToObject(obj, "insertText", cJSON_CreateString(insert_t))
+  cJSON_AddItemToObject(obj, "insertTextFormat", cJSON_CreateNumber(insert_t_f))
+  cJSON_AddItemToObject(obj, "insertTextFormat", cJSON_CreateNumber(insert_t_f))
+  cJSON_AddItemToObject(obj, "kind", cJSON_CreateNumber(comp_kind))
+  return obj
+end
+
 function response.completion(request_id: number): string
   local completion_response = cJSON_CreateObject()
 
   base_message(completion_response, request_id)
   local result = cJSON_CreateArray()
 
-  local completion_require = cJSON_CreateObject()
-  local require_label = cJSON_CreateString("require")
-  cJSON_AddItemToObject(completion_require, "label", require_label)
-  local require_insert_text = cJSON_CreateString("require")
-  cJSON_AddItemToObject(completion_require, "insertText", require_insert_text)
+  local completion_require = create_completion([[
+```
+global function require(modname: string <comptime>)
+```
+Loads the given module `modname`.
 
+The function starts by looking into loaded modules to determine whether `modname` is already loaded. If it is then require does nothing, otherwise it tries to load the module.
+
+If there is any error loading the module, then the compilation fails. If there is any error running the module, then the application terminates.
+]], "require(modname)", "require", InsertTextFormat.PlainText, CompletionItemKind.Function)
   cJSON_AddItemToArray(result, completion_require)
+
+  local completion_print = create_completion([[
+```
+global function print(...: varargs): void
+```
+
+Receives any number of arguments and prints their values to the standard output, converting each argument to a string following the same rules of `tostring`. The values are separated by tabs and a new line is always appended.
+
+The function `print` is not intended for formatted output, but only as a quick way to show a value, for instance for debugging. For complete control over the output, use `io.write` or `io.writef`.
+panic
+]], "print(...)", "print", InsertTextFormat.PlainText, CompletionItemKind.Function)
+  cJSON_AddItemToArray(result, completion_print)
+
+  local completion_panic = create_completion([[
+```
+global function panic(message: string): void
+```
+
+Terminate the application abnormally with message `message`. This function never returns.
+
+Use to raise unrecoverable errors.
+]], "panic(message)", "panic", InsertTextFormat.PlainText, CompletionItemKind.Function)
+  cJSON_AddItemToArray(result, completion_panic)
+
+  local completion_error = create_completion([[
+```
+global function error(message: string): void
+```
+
+Raises an error with message `message`. This function never returns.
+
+Currently this is an alias to `panic` and terminates the application, but in the future, in case the language get an exception system, it may be changed to an exception being thrown.
+
+Remarks: Error messages are dependent on the host environment the program is being compiled in, it may include terminal color codes and path to host machine files to make debugging error locations easier. You can disable this behavior by enabling the pragma `noerrorloc`, it will make the program error messages reproducible when building across different host machines.
+]], "error(message)", "error", InsertTextFormat.PlainText, CompletionItemKind.Function)
+  cJSON_AddItemToArray(result, completion_error)
 
   cJSON_AddItemToObject(completion_response, "result", result)
 
