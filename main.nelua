@@ -15,7 +15,7 @@ require 'src.response'
 	  assert(log_file):close()
 	end
 
-	local function log(msg: string) 
+	local function log(msg: auto) 
 	  local log_file = io.open("lsp.log", "a")
 	  local date = os.date("%Y/%m/%d", os.time())
 	  local time = os.date("%X", os.time())
@@ -25,7 +25,7 @@ require 'src.response'
 	  assert(log_file):close()
 	end
 ## else
-	local function log(msg: string) end
+	local function log(msg: auto) end
 ## end
 
 local stdin: string
@@ -60,14 +60,14 @@ while true do
 		if request_method == "textDocument/definition" then
 			local request_position = cJSON_GetObjectItem(request_params , "position") 
 			local position_line = cJSON_GetObjectItem(request_position, "line") 
-			local position_character = cJSON_GetObjectItem(request_position, "charachter") 
+			local position_char = cJSON_GetObjectItem(request_position, "character") 
 			local current_line: integer
-			local current_character: integer
 			if cJSON_IsNumber(position_line) == 1 then
 				current_line = position_line.valueint
 			end
-			if cJSON_IsNumber(position_character) == 1 then
-				current_character = position_character.valueint
+			local current_char: integer
+			if cJSON_IsNumber(position_char) == 1 then
+				current_char = position_char.valueint
 			end
 
 			local root_uri_prog = io.popen("git rev-parse --show-toplevel")
@@ -84,6 +84,7 @@ while true do
 
 			local go_to_definition: string
 			local go_to_file: string = "file://"
+			local go_to_file_found: boolean
 			local _, current_file_path = current_file_uri:match("^%.?(%S+)://(.+)$")
 			local file_to_read = io.open(current_file_path[2], "r")
 			if file_to_read:isopen() then
@@ -92,30 +93,35 @@ while true do
 				for line in file_to_read:lines() do
 					if line_num == current_line then
 						if line:match('require') then
-							local root_require_matched, root_require_seq = line:match("^.*require ['\"](%w+%.*%w*)['\"]$")
-							local same_require_matched, same_require_seq = line:match("^.*require ['\"]%.(%w+%.*%w*)['\"]$")
+							local root_require_matched, root_require_seq = line:match([[^(.*)require %(?['\"](%w+%.*%w*)['\"]%)?$]])
 							if root_require_matched then
-								local require_path = root_require_seq[1]:gsub("%.","/") .. ".nelua"
+								local len_w_require = #root_require_seq[1] + #("require")
+								local require_path = root_require_seq[2]:gsub("%.","/") .. ".nelua"
 								local git_paths = io.popen("git ls-files")
 								for path in git_paths:lines() do
-									if path == require_path then
+									if path == require_path and current_char > len_w_require then
 										go_to_file = go_to_file .. root_uri .. "/" .. require_path
 										log(go_to_file)
 										go_to_definition = response.definition(go_to_file, request_id) 
+										go_to_file_found = true
 									end
 								end
 							end
+							local same_require_matched, same_require_seq = line:match([[^(.*)require %(?['\"]%.(%w+%.*%w*)['\"]%)?$]])
+							log(same_require_matched)
 							if same_require_matched then
+								local len_w_require = #same_require_seq[1] + #("require")
 								local _, current_dir_seq = current_file_uri:match("^file://(.*)/[^/]+%.nelua$") 
 								local uri_sub = current_dir_seq[1]:sub(#root_uri + 1):sub(2)
-								local require_path = uri_sub .. "/" .. same_require_seq[1]:gsub("%.","/") .. ".nelua"
+								local require_path = uri_sub .. "/" .. same_require_seq[2]:gsub("%.","/") .. ".nelua"
 								log(require_path)
 								local git_paths = io.popen("git ls-files")
 								for path in git_paths:lines() do
-									if path == require_path then
+									if path == require_path and current_char > len_w_require then
 										go_to_file = go_to_file .. root_uri .. "/" .. require_path
 										log(go_to_file)
 										go_to_definition = response.definition(go_to_file, request_id) 
+										go_to_file_found = true
 									end
 								end
 							end
@@ -126,6 +132,9 @@ while true do
 				file_to_read:close()
 			else
 				log("File wasn't opened")
+			end
+			if not go_to_file_found then
+				go_to_definition = response.definition(go_to_file, request_id) 
 			end
 			
 			io.write(go_to_definition)
