@@ -29,7 +29,13 @@ require 'src.response'
 ## end
 
 local stdin: string
+local documents: hashmap(string,string)
 local current_file: string
+local current_uri: string
+
+local root_uri_prog = io.popen("git rev-parse --show-toplevel")
+local root_uri: string = root_uri_prog:read()
+
 
 while true do
 	stdin = stdin .. io.read(1)
@@ -44,7 +50,11 @@ while true do
 			request_id = request_id_obj.valueint
 		end
 		local request_params = cJSON_GetObjectItem(request, "params") 
-		local request_textDocument = cJSON_GetObjectItem(request_params , "textDocument") 
+		local request_text_document = cJSON_GetObjectItem(request_params , "textDocument") 
+		local textDocument_uri = cJSON_GetObjectItem(request_text_document, "uri") 
+		if cJSON_IsString(textDocument_uri) == 1 then
+			current_uri = textDocument_uri.valuestring
+		end
 
 		log("Method: " .. request_method)
 
@@ -54,25 +64,32 @@ while true do
 		end
 
 		if request_method == "textDocument/didOpen" then
-			local textDocument_text = cJSON_GetObjectItem(request_textDocument , "text") 
-			if cJSON_IsString(textDocument_text) == 1 then
-				current_file = textDocument_text.valuestring
-			end
+			local current_file_path = current_uri:sub(#("file://") + #root_uri + 2)
+			current_file = io.open(current_file_path):read("a")
+			documents[current_uri] = current_file
+		end
+
+		if request_method == "textDocument/didClose" then
+			documents:remove(current_uri)
 		end
 
 		if request_method == "textDocument/didChange" then
-			local content_changes = cJSON_GetObjectItem(request_params, "contentChanges")
-			if cJSON_IsArray(content_changes) == 1 then
-				local changes_size = cJSON_GetArraySize(content_changes)
-				for change_index = 0, changes_size do
-					local change_obj = cJSON_GetArrayItem(content_changes, change_index)
-					local change_text_obj = cJSON_GetObjectItem(change_obj, "text")
-					local change_text: string
-					if cJSON_IsString(change_text_obj) == 1 then
-						change_text = change_text_obj.valuestring
-						current_file = change_text
-					end					
-				end 
+			for document_uri, document_text in pairs(documents) do
+				if document_uri == current_uri then
+					local content_changes = cJSON_GetObjectItem(request_params, "contentChanges")
+					if cJSON_IsArray(content_changes) == 1 then
+						local changes_size = cJSON_GetArraySize(content_changes)
+						for change_index = 0, changes_size - 1 do
+							local change_obj = cJSON_GetArrayItem(content_changes, change_index)
+							local change_text_obj = cJSON_GetObjectItem(change_obj, "text")
+							if cJSON_IsString(change_text_obj) == 1 then
+								local change_text = change_text_obj.valuestring
+								current_file = change_text
+								documents[current_uri] = current_file
+							end					
+						end 
+					end
+				end
 			end
 		end
 
@@ -94,16 +111,10 @@ while true do
 			if cJSON_IsNumber(position_char) == 1 then
 				current_char = position_char.valueint
 			end
-
-			local root_uri_prog = io.popen("git rev-parse --show-toplevel")
-			local root_uri: string = root_uri_prog:read()
-			if root_uri:match("[/]") then
-			end
-
-			local textDocument_uri = cJSON_GetObjectItem(request_textDocument , "uri") 
- 			local current_file_uri: string
-			if cJSON_IsString(textDocument_uri) == 1 then
-				current_file_uri = textDocument_uri.valuestring
+			for document_uri, document_text in pairs(documents) do
+				if document_uri == current_uri then
+					current_file = documents[current_uri]
+				end
 			end
 
 			local go_to_definition: string
@@ -130,7 +141,7 @@ while true do
 						local same_require_matched, same_require_seq = line:match([[^(.*)require %(?['\"]%.(%w+%.*%w*)['\"]%)?]])
 						if same_require_matched then
 							local len_w_require = #same_require_seq[1] + #("require")
-							local _, current_dir_seq = current_file_uri:match("^file://(.*)/[^/]+%.nelua$") 
+							local _, current_dir_seq = current_uri:match("^file://(.*)/[^/]+%.nelua$") 
 							local uri_sub = current_dir_seq[1]:sub(#root_uri + 1):sub(2)
 							local require_path = uri_sub .. "/" .. same_require_seq[2]:gsub("%.","/") .. ".nelua"
 							log(require_path)
