@@ -29,6 +29,7 @@ require 'src.response'
 ## end
 
 local stdin: string
+local current_file: string
 
 while true do
 	stdin = stdin .. io.read(1)
@@ -43,12 +44,36 @@ while true do
 			request_id = request_id_obj.valueint
 		end
 		local request_params = cJSON_GetObjectItem(request, "params") 
+		local request_textDocument = cJSON_GetObjectItem(request_params , "textDocument") 
 
 		log("Method: " .. request_method)
 
 		if request_method == "initialize" then
 			io.write(response.initialize(request_id))
 			io.flush()
+		end
+
+		if request_method == "textDocument/didOpen" then
+			local textDocument_text = cJSON_GetObjectItem(request_textDocument , "text") 
+			if cJSON_IsString(textDocument_text) == 1 then
+				current_file = textDocument_text.valuestring
+			end
+		end
+
+		if request_method == "textDocument/didChange" then
+			local content_changes = cJSON_GetObjectItem(request_params, "contentChanges")
+			if cJSON_IsArray(content_changes) == 1 then
+				local changes_size = cJSON_GetArraySize(content_changes)
+				for change_index = 0, changes_size do
+					local change_obj = cJSON_GetArrayItem(content_changes, change_index)
+					local change_text_obj = cJSON_GetObjectItem(change_obj, "text")
+					local change_text: string
+					if cJSON_IsString(change_text_obj) == 1 then
+						change_text = change_text_obj.valuestring
+						current_file = change_text
+					end					
+				end 
+			end
 		end
 
 		if request_method == "textDocument/hover" then
@@ -75,7 +100,6 @@ while true do
 			if root_uri:match("[/]") then
 			end
 
-			local request_textDocument = cJSON_GetObjectItem(request_params , "textDocument") 
 			local textDocument_uri = cJSON_GetObjectItem(request_textDocument , "uri") 
  			local current_file_uri: string
 			if cJSON_IsString(textDocument_uri) == 1 then
@@ -85,53 +109,44 @@ while true do
 			local go_to_definition: string
 			local go_to_file: string = "file://"
 			local go_to_file_found: boolean
-			local _, current_file_path = current_file_uri:match("^%.?(%S+)://(.+)$")
-			local file_to_read = io.open(current_file_path[2], "r")
-			if file_to_read:isopen() then
-				log("File was opened")
-				local line_num = 0
-				for line in file_to_read:lines() do
-					if line_num == current_line then
-						if line:match('require') then
-							local root_require_matched, root_require_seq = line:match([[^(.*)require %(?['\"](%w+%.*%w*)['\"]%)?$]])
-							if root_require_matched then
-								local len_w_require = #root_require_seq[1] + #("require")
-								local require_path = root_require_seq[2]:gsub("%.","/") .. ".nelua"
-								local git_paths = io.popen("git ls-files")
-								for path in git_paths:lines() do
-									if path == require_path and current_char > len_w_require then
-										go_to_file = go_to_file .. root_uri .. "/" .. require_path
-										log(go_to_file)
-										go_to_definition = response.definition(go_to_file, request_id) 
-										go_to_file_found = true
-									end
+			local line_num: integer
+			for line in current_file:gmatch("([^\n]-)\n") do
+				if line_num == current_line then
+					if line:match('require') then
+						local root_require_matched, root_require_seq = line:match([[^(.*)require %(?['\"](%w+%.*%w*)['\"]%)?]])
+						if root_require_matched then
+							local len_w_require = #root_require_seq[1] + #("require")
+							local require_path = root_require_seq[2]:gsub("%.","/") .. ".nelua"
+							local git_paths = io.popen("git ls-files")
+							for path in git_paths:lines() do
+								if path == require_path and current_char > len_w_require then
+									go_to_file = go_to_file .. root_uri .. "/" .. require_path
+									log(go_to_file)
+									go_to_definition = response.definition(go_to_file, request_id) 
+									go_to_file_found = true
 								end
 							end
-							local same_require_matched, same_require_seq = line:match([[^(.*)require %(?['\"]%.(%w+%.*%w*)['\"]%)?$]])
-							log(same_require_matched)
-							if same_require_matched then
-								local len_w_require = #same_require_seq[1] + #("require")
-								local _, current_dir_seq = current_file_uri:match("^file://(.*)/[^/]+%.nelua$") 
-								local uri_sub = current_dir_seq[1]:sub(#root_uri + 1):sub(2)
-								local require_path = uri_sub .. "/" .. same_require_seq[2]:gsub("%.","/") .. ".nelua"
-								log(require_path)
-								local git_paths = io.popen("git ls-files")
-								for path in git_paths:lines() do
-									if path == require_path and current_char > len_w_require then
-										go_to_file = go_to_file .. root_uri .. "/" .. require_path
-										log(go_to_file)
-										go_to_definition = response.definition(go_to_file, request_id) 
-										go_to_file_found = true
-									end
+						end
+						local same_require_matched, same_require_seq = line:match([[^(.*)require %(?['\"]%.(%w+%.*%w*)['\"]%)?]])
+						if same_require_matched then
+							local len_w_require = #same_require_seq[1] + #("require")
+							local _, current_dir_seq = current_file_uri:match("^file://(.*)/[^/]+%.nelua$") 
+							local uri_sub = current_dir_seq[1]:sub(#root_uri + 1):sub(2)
+							local require_path = uri_sub .. "/" .. same_require_seq[2]:gsub("%.","/") .. ".nelua"
+							log(require_path)
+							local git_paths = io.popen("git ls-files")
+							for path in git_paths:lines() do
+								if path == require_path and current_char > len_w_require then
+									go_to_file = go_to_file .. root_uri .. "/" .. require_path
+									log(go_to_file)
+									go_to_definition = response.definition(go_to_file, request_id) 
+									go_to_file_found = true
 								end
 							end
 						end
 					end
-					line_num = line_num + 1
 				end
-				file_to_read:close()
-			else
-				log("File wasn't opened")
+				line_num = line_num + 1
 			end
 			if not go_to_file_found then
 				go_to_definition = response.definition(go_to_file, request_id) 
@@ -148,11 +163,9 @@ while true do
 		end
 	
 		if request_method == "shutdown" then
-			cJSON_Delete(request)
 			os.exit()
 		end
 
-		cJSON_Delete(request)
 		stdin = ""
 	end
 end

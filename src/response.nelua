@@ -40,6 +40,9 @@ function response.initialize(request_id: number): string
 
   local capabilities = cJSON_CreateObject()
 
+  local text_document_sync = cJSON_CreateNumber(1)
+  cJSON_AddItemToObject(capabilities, "textDocumentSync", text_document_sync)
+
   local hover_provider = cJSON_CreateBool(1)
   cJSON_AddItemToObject(capabilities, "hoverProvider", hover_provider)
 
