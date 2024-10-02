@@ -73,6 +73,7 @@ while true do
 			documents:remove(current_uri)
 		end
 
+		-- TODO: Find out how to speed this up 
 		if request_method == "textDocument/didChange" then
 			if documents[current_uri] ~= nil then
 				local content_changes = cJSON_GetObjectItem(request_params, "contentChanges")
@@ -190,29 +191,63 @@ while true do
 					        end
 					    end
 
-						local function_matched, function_seq = line:match("([%w_]+[:.]?[%w_]+)%s*%((.*)%)?")
-						if function_matched then
-							local function_word = function_seq[1] 
-							if function_word:match("[%w_]+[^:.]") then
+						for func in line:gmatch("([%w_]+[:%.]?[%w_]+)%s*%(") do
+							local function_word = func:sub(1, #func - 1)
+							log(function_word)
+							if function_word:match("[^:%.]([w%_]+)[^:%.]") then
+								log(function_word)
 								local git_finds = io.popen("git grep -n --column " .. function_word .. "\\(" .. " $(git rev-parse --show-toplevel)")
 								for find in git_finds:lines() do
 									if find:match("function") then
-										local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):(%d+):")
-										if find_info_matched then
-											local path = find_info_seq[1]
-											local line = tointeger(find_info_seq[2]) - 1
-											local char = tointeger(find_info_seq[3]) - 1
-											local go_to_file = file_scheme .. root_uri .. "/" .. path
-											go_to_files:push(go_to_file)
-											go_to_s_lines:push(line)
-											go_to_s_chars:push(char)
-											go_to_e_lines:push(line)
-											go_to_e_chars:push(char + #function_word)
+										local func_matched, func_seq = part:match(function_word)
+										local func_start = line:find(func_seq[1], start_idx, true)
+								        local func_end = func_start + #func_seq[1] - 1  
+
+										if current_char >= func_start and current_char <= func_end then
+											local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):(%d+):")
+											if find_info_matched then
+												local path = find_info_seq[1]
+												local line = tointeger(find_info_seq[2]) - 1
+												local char = tointeger(find_info_seq[3]) - 1
+												local go_to_file = file_scheme .. root_uri .. "/" .. path
+												go_to_files:push(go_to_file)
+												go_to_s_lines:push(line)
+												go_to_s_chars:push(char)
+												go_to_e_lines:push(line)
+												go_to_e_chars:push(char + #function_word)
+											end
 										end
 									end
 								end
 								git_finds:close()
 								break
+							end
+							if function_word:match("[:%.][%w_]+") then
+								local git_finds = io.popen("git grep -n --column " .. function_word .. "\\(" .. " $(git rev-parse --show-toplevel)")
+								for find in git_finds:lines() do
+									if find:match("function") then
+										local func_matched, func_seq = part:match(function_word)
+										local after_dot_matched, after_dot_seq = function_word:match(".*[:%.]([%w_]+)")
+										local func_start = line:find("[:%.]" .. after_dot_seq[1], start_idx)
+										log(func_start)
+								        local func_end = func_start + #func_seq[1] - 1  
+
+										if current_char >= func_start and current_char <= func_end then
+											local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):(%d+):")
+											if find_info_matched then
+												local path = find_info_seq[1]
+												local line = tointeger(find_info_seq[2]) - 1
+												local char = tointeger(find_info_seq[3]) - 1
+												local go_to_file = file_scheme .. root_uri .. "/" .. path
+												go_to_files:push(go_to_file)
+												go_to_s_lines:push(line)
+												go_to_s_chars:push(char)
+												go_to_e_lines:push(line)
+												go_to_e_chars:push(char + #function_word)
+											end
+										end
+									end
+								end
 							end
 						end
 					end
