@@ -99,65 +99,129 @@ while true do
 
 		if request_method == "textDocument/definition" then
 			local request_position = cJSON_GetObjectItem(request_params , "position") 
-			local position_line = cJSON_GetObjectItem(request_position, "line") 
-			local position_char = cJSON_GetObjectItem(request_position, "character") 
+			local current_line_obj = cJSON_GetObjectItem(request_position, "line") 
 			local current_line: integer
-			if cJSON_IsNumber(position_line) == 1 then
-				current_line = position_line.valueint
+			if cJSON_IsNumber(current_line_obj) == 1 then
+				current_line = current_line_obj.valueint
 			end
+			local current_char_obj = cJSON_GetObjectItem(request_position, "character") 
 			local current_char: integer
-			if cJSON_IsNumber(position_char) == 1 then
-				current_char = position_char.valueint
+			if cJSON_IsNumber(current_char_obj) == 1 then
+				current_char = current_char_obj.valueint
 			end
 			if documents[current_uri] ~= nil then
 				current_file = documents[current_uri]
 			end
 
 			local go_to_definition: string
-			local go_to_file: string = "file://"
-			local go_to_file_found: boolean
+			local go_to_files: sequence(string)
+			local go_to_s_lines: sequence(integer)
+			local go_to_s_chars: sequence(integer)
+			local go_to_e_lines: sequence(integer)
+			local go_to_e_chars: sequence(integer)
+			local file_scheme: string = "file://" 
 			local line_num: integer
+
 			for line in current_file:gmatch("([^\n]-)\n") do
 				if line_num == current_line then
-					if line:match('require') then
-						local root_require_matched, root_require_seq = line:match([[^(.*)require %(?['\"](%w+%.*%w*)['\"]%)?]])
-						if root_require_matched then
-							local len_w_require = #root_require_seq[1] + #("require")
-							local require_path = root_require_seq[2]:gsub("%.","/") .. ".nelua"
-							local git_paths = io.popen("git ls-files")
-							for path in git_paths:lines() do
-								if path == require_path and current_char > len_w_require then
-									go_to_file = go_to_file .. root_uri .. "/" .. require_path
-									log(go_to_file)
-									go_to_definition = response.definition(go_to_file, request_id) 
-									go_to_file_found = true
+
+					local start_idx, end_idx = current_char, current_char
+
+					while start_idx > 1 and not line:sub(start_idx - 1, start_idx - 1):match("[,]") do
+					    start_idx = start_idx - 1
+					end
+
+					while end_idx < #line and not line:sub(end_idx + 1, end_idx + 1):match("[,]") do
+					    end_idx = end_idx + 1
+					end
+
+					local phrase = line:sub(start_idx, end_idx)
+
+					for part in phrase:gmatch("[^,]+") do
+					    if line:match("require") then
+
+							local path_matched, path_seq = part:match("require%s*[%(]?%s*['\"]([%w%.]+)['\"]%s*[%)]?")
+							local path_start = line:find(path_seq[1], start_idx, true)
+					        local path_end = path_start + #path_seq[1] - 1  
+
+							if current_char >= path_start and current_char <= path_end then
+
+								local root_matched = path_seq[1]:match("%w+%.*%w*")
+								if root_matched then
+									local path = path_seq[1]:gsub("%.","/") .. ".nelua"
+									local git_paths = io.popen("git ls-files")
+									for git_path in git_paths:lines() do
+										if git_path == path then
+											local go_to_file = file_scheme .. root_uri .. "/" .. path
+											go_to_files:push(go_to_file)
+											go_to_s_lines:push(0)
+											go_to_s_chars:push(0)
+											go_to_e_lines:push(0)
+											go_to_e_chars:push(0)
+										end
+									end
+									git_paths:close()
+									break
 								end
-							end
-						end
-						local same_require_matched, same_require_seq = line:match([[^(.*)require %(?['\"]%.(%w+%.*%w*)['\"]%)?]])
-						if same_require_matched then
-							local len_w_require = #same_require_seq[1] + #("require")
-							local _, current_dir_seq = current_uri:match("^file://(.*)/[^/]+%.nelua$") 
-							local uri_sub = current_dir_seq[1]:sub(#root_uri + 1):sub(2)
-							local require_path = uri_sub .. "/" .. same_require_seq[2]:gsub("%.","/") .. ".nelua"
-							log(require_path)
-							local git_paths = io.popen("git ls-files")
-							for path in git_paths:lines() do
-								if path == require_path and current_char > len_w_require then
-									go_to_file = go_to_file .. root_uri .. "/" .. require_path
-									log(go_to_file)
-									go_to_definition = response.definition(go_to_file, request_id) 
-									go_to_file_found = true
+
+								local same_matched = path_seq[1]:match("%.%w+%.*%w*")
+								if same_matched then
+									local sub_uri = current_uri:sub(#file_scheme + #root_uri + 1)
+									local current_file_matched, current_file_seq = sub_uri:match("(.*)/%w+%.nelua")
+									local path: string
+									if current_file_matched then
+										path = current_file_seq[1]:sub(2) .. path_seq[1]:gsub("%.","/") .. ".nelua"
+									end
+									local git_paths = io.popen("git ls-files")
+									for git_path in git_paths:lines() do
+										if git_path == path then
+											local go_to_file = file_scheme .. root_uri .. "/" .. path
+											go_to_files:push(go_to_file)
+											go_to_s_lines:push(0)
+											go_to_s_chars:push(0)
+											go_to_e_lines:push(0)
+											go_to_e_chars:push(0)
+											break
+										end
+									end
+									git_paths:close()
+									break
 								end
+					        end
+					    end
+
+						local function_matched, function_seq = line:match("([%w_]+[:.]?[%w_]+)%s*%((.*)%)?")
+						if function_matched then
+							local function_word = function_seq[1] 
+							if function_word:match("[%w_]+[^:.]") then
+								local git_finds = io.popen("git grep -n --column " .. function_word .. "\\(" .. " $(git rev-parse --show-toplevel)")
+								for find in git_finds:lines() do
+									if find:match("function") then
+										local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):(%d+):")
+										if find_info_matched then
+											local path = find_info_seq[1]
+											local line = tointeger(find_info_seq[2]) - 1
+											local char = tointeger(find_info_seq[3]) - 1
+											local go_to_file = file_scheme .. root_uri .. "/" .. path
+											go_to_files:push(go_to_file)
+											go_to_s_lines:push(line)
+											go_to_s_chars:push(char)
+											go_to_e_lines:push(line)
+											go_to_e_chars:push(char + #function_word)
+										end
+									end
+								end
+								git_finds:close()
+								break
 							end
 						end
 					end
 				end
 				line_num = line_num + 1
 			end
-			if not go_to_file_found then
-				go_to_definition = response.definition(go_to_file, request_id) 
-			end
+
+			-- Should probably improve this
+			go_to_definition = response.definition(go_to_files, go_to_s_lines, go_to_s_chars, go_to_e_lines, go_to_e_chars, request_id) 
 			
 			io.write(go_to_definition)
 			io.flush()

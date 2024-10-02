@@ -1,3 +1,5 @@
+require 'iterators'
+
 require '.rpc'
 
 global response = @record{}
@@ -83,28 +85,30 @@ function response.hover(request_id: number): string
   return response
 end
 
-function response.definition(uri: string, request_id: integer, s_line: integer, s_char: integer, e_line: integer, e_char: integer): string
+function response.definition(uris: sequence(string), s_lines: sequence(integer), s_chars: sequence(integer),e_lines: sequence(integer), e_chars: sequence(integer), request_id: integer): string
   local definition_response = cJSON_CreateObject()
 
   base_message(definition_response, request_id)
-  local result: *cJSON
-  local range: *cJSON
-  local def_error: *cJSON
- 
-  if uri ~= "file://" then
-    result = cJSON_CreateObject()
-    local file_uri = cJSON_CreateString(uri)
-    cJSON_AddItemToObject(result, "uri", file_uri)
+  local result = cJSON_CreateArray()
 
-    range = create_range(s_line, s_char, e_line, e_char)
-    cJSON_AddItemToObject(result, "range", range)
-  else
-    result = cJSON_CreateNull()
-    def_error = cJSON_CreateString("No definition found")
-    cJSON_AddItemToObject(definition_response, "error", def_error)
+  for i, uri in ipairs(uris) do
+    if uri ~= "file://" then
+      local uri_obj = cJSON_CreateObject()
+      
+      local file_uri = cJSON_CreateString(uri)
+      cJSON_AddItemToObject(uri_obj, "uri", file_uri)
+
+      local range = create_range(s_lines[i], s_chars[i], e_lines[i], e_chars[i])
+      cJSON_AddItemToObject(uri_obj, "range", range)
+
+      cJSON_AddItemToArray(result, uri_obj)
+    end
   end
 
   cJSON_AddItemToObject(definition_response, "result", result)
+
+  local def_error = cJSON_CreateString("No definition found")
+  cJSON_AddItemToObject(definition_response, "error", def_error)
 
   local response = rpc.encode(definition_response)
   cJSON_Delete(definition_response)
