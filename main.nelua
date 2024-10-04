@@ -79,15 +79,15 @@ while true do
 				local content_changes = cJSON_GetObjectItem(request_params, "contentChanges")
 				if cJSON_IsArray(content_changes) == 1 then
 					local changes_size = cJSON_GetArraySize(content_changes)
-					for change_index = 0, changes_size - 1 do
-						local change_obj = cJSON_GetArrayItem(content_changes, change_index)
+					-- for change_index = 0, changes_size - 1 do
+						local change_obj = cJSON_GetArrayItem(content_changes, changes_size - 1)
 						local change_text_obj = cJSON_GetObjectItem(change_obj, "text")
 						if cJSON_IsString(change_text_obj) == 1 then
 							local change_text = change_text_obj.valuestring
 							current_file = change_text
 							documents[current_uri] = current_file
 						end					
-					end 
+					-- end 
 				end
 			end
 		end
@@ -150,7 +150,7 @@ while true do
 								local root_matched = path_seq[1]:match("%w+%.*%w*")
 								if root_matched then
 									local path = path_seq[1]:gsub("%.","/") .. ".nelua"
-									local git_paths = io.popen("git ls-files")
+									local git_paths = io.popen("git ls-files && git ls-files --others")
 									for git_path in git_paths:lines() do
 										if git_path == path then
 											local go_to_file = file_scheme .. root_uri .. "/" .. path
@@ -159,10 +159,10 @@ while true do
 											go_to_s_chars:push(0)
 											go_to_e_lines:push(0)
 											go_to_e_chars:push(0)
+											goto definition_found
 										end
 									end
 									git_paths:close()
-									break
 								end
 
 								local same_matched = path_seq[1]:match("%.%w+%.*%w*")
@@ -173,7 +173,7 @@ while true do
 									if current_file_matched then
 										path = current_file_seq[1]:sub(2) .. path_seq[1]:gsub("%.","/") .. ".nelua"
 									end
-									local git_paths = io.popen("git ls-files")
+									local git_paths = io.popen("git ls-files && git ls-files --others")
 									for git_path in git_paths:lines() do
 										if git_path == path then
 											local go_to_file = file_scheme .. root_uri .. "/" .. path
@@ -182,11 +182,10 @@ while true do
 											go_to_s_chars:push(0)
 											go_to_e_lines:push(0)
 											go_to_e_chars:push(0)
-											break
+											goto definition_found
 										end
 									end
 									git_paths:close()
-									break
 								end
 					        end
 					    end
@@ -196,7 +195,7 @@ while true do
 							log(function_word)
 							if function_word:match("[^:%.]([w%_]+)[^:%.]") then
 								log(function_word)
-								local git_finds = io.popen("git grep -n --column " .. function_word .. "\\(" .. " $(git rev-parse --show-toplevel)")
+								local git_finds = io.popen("git grep --no-index -n --column " .. function_word .. "\\(" .. " $(git rev-parse --show-toplevel)")
 								for find in git_finds:lines() do
 									if find:match("function") then
 										local func_matched, func_seq = part:match(function_word)
@@ -215,15 +214,15 @@ while true do
 												go_to_s_chars:push(char)
 												go_to_e_lines:push(line)
 												go_to_e_chars:push(char + #function_word)
+												goto definition_found
 											end
 										end
 									end
 								end
 								git_finds:close()
-								break
 							end
 							if function_word:match("[:%.][%w_]+") then
-								local git_finds = io.popen("git grep -n --column " .. function_word .. "\\(" .. " $(git rev-parse --show-toplevel)")
+								local git_finds = io.popen("git grep --no-index -n --column " .. function_word .. "\\(" .. " $(git rev-parse --show-toplevel)")
 								for find in git_finds:lines() do
 									if find:match("function") then
 										local func_matched, func_seq = part:match(function_word)
@@ -244,12 +243,23 @@ while true do
 												go_to_s_chars:push(char)
 												go_to_e_lines:push(line)
 												go_to_e_chars:push(char + #function_word)
+												goto definition_found
 											end
 										end
 									end
 								end
 							end
 						end
+						-- TODO: figure oout how to handle each identifier
+						for identifier in line:gmatch("[^%(%),:%.]([%w_]+)[^%(%),:%.]") do
+							local git_finds = io.popen(string.format("git grep --no-index -n --column -E '(local|global).+%s:?.+(=| )'  $(git rev-parse --show-toplevel)", identifier))
+							log(identifier)
+							-- for find in git_finds:lines() do
+							-- 	log(find)
+							-- end
+							git_finds:close()
+						end
+						::definition_found::
 					end
 				end
 				line_num = line_num + 1
