@@ -59,7 +59,8 @@ while true do
 		log("Method: " .. request_method)
 
 		if request_method == "initialize" then
-			io.write(response.initialize(request_id))
+			local intialize_response = response.initialize(request_id) 
+			io.write(intialize_response)
 			io.flush()
 		end
 
@@ -93,8 +94,8 @@ while true do
 		end
 
 		if request_method == "textDocument/hover" then
-			local response = response.hover(request_id)
-			io.write(response)
+			local hover_response = response.hover(request_id)
+			io.write(hover_response)
 			io.flush()
 		end
 
@@ -195,7 +196,7 @@ while true do
 							if function_word:match("[^:%.]([w%_]+)[^:%.]") then
 								local git_finds = io.popen(string.format("git grep --no-index -n -E 'function.*%s\\(' $(git rev-parse --show-toplevel)", function_word))
 								for find in git_finds:lines() do
-									if find:match("function") then
+									if find:match("function") and find:match("%.nelua") then
 										local func_matched, func_seq = part:match(function_word)
 										local func_start = line:find(func_seq[1], start_idx, true)
 								        local func_end = func_start + #func_seq[1] - 1  
@@ -207,14 +208,24 @@ while true do
 												local line = tointeger(find_info_seq[2]) - 1
 												local char: integer
 												local line_num = 0
-												for l in io.open(path):lines() do
-													if line_num == line then
-														char = l:find(function_word) - 1
-														break
-													end
-													line_num = line_num + 1
-												end
 												local go_to_file = file_scheme .. root_uri .. "/" .. path
+												if documents[go_to_file] ~= "" then
+													for l in documents[go_to_file]:gmatch("([^\n]-)\n") do
+														if line_num == line then
+															char = l:find(function_word) - 1
+															break
+														end
+														line_num = line_num + 1
+													end
+												else
+													for l in io.open(path):lines() do
+														if line_num == line then
+															char = l:find(function_word) - 1
+															break
+														end
+														line_num = line_num + 1
+													end
+												end
 												go_to_files:push(go_to_file)
 												go_to_s_lines:push(line)
 												go_to_s_chars:push(char)
@@ -230,11 +241,11 @@ while true do
 							if function_word:match("[:%.][%w_]+") then
 								local git_finds = io.popen(string.format("git grep --no-index -n -E 'function.*%s\\(' $(git rev-parse --show-toplevel)", function_word))
 								for find in git_finds:lines() do
-									if find:match("function") then
+									if find:match("function") and find:match("%.nelua") then
 										local func_matched, func_seq = part:match(function_word)
 										local after_dot_matched, after_dot_seq = function_word:match(".*[:%.]([%w_]+)")
 										local func_start = line:find("[:%.]" .. after_dot_seq[1], start_idx)
-								        local func_end = func_start + #func_seq[1] - 1  
+								        local func_end = func_start + #after_dot_seq[1] - 1  
 
 										if current_char >= func_start and current_char <= func_end then
 											local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):")
@@ -243,14 +254,24 @@ while true do
 												local line = tointeger(find_info_seq[2]) - 1
 												local char: integer
 												local line_num = 0
-												for l in io.open(path):lines() do
-													if line_num == line then
-														char = l:find(function_word) - 1
-														break
-													end
-													line_num = line_num + 1
-												end
 												local go_to_file = file_scheme .. root_uri .. "/" .. path
+												if documents[go_to_file] ~= "" then
+													for l in documents[go_to_file]:gmatch("([^\n]-)\n") do
+														if line_num == line then
+															char = l:find(function_word) - 1
+															break
+														end
+														line_num = line_num + 1
+													end
+												else
+													for l in io.open(path):lines() do
+														if line_num == line then
+															char = l:find(function_word) - 1
+															break
+														end
+														line_num = line_num + 1
+													end
+												end
 												go_to_files:push(go_to_file)
 												go_to_s_lines:push(line)
 												go_to_s_chars:push(char)
@@ -263,14 +284,85 @@ while true do
 								end
 							end
 						end
-						-- TODO: figure oout how to handle each identifier
-						for identifier in line:gmatch("[^%(%),:%.]([%w_]+)[^%(%),:%.]") do
-							local git_finds = io.popen(string.format("git grep --no-index -n --column -E '(local|global).+%s:?.+(=| )'  $(git rev-parse --show-toplevel)", identifier))
-							log(identifier)
-							-- for find in git_finds:lines() do
-							-- 	log(find)
-							-- end
-							git_finds:close()
+
+						for identifier in line:gmatch("[^%(%),:%.%[%]%s]([%w_]+)[^%(%),:%.%[%]%s]") do
+							local identifier_matched, identifier_seq = part:match("[^%w_]".. identifier .. "[^%w_]")
+							local identifier_start = line:find(identifier_seq[1], start_idx, true) - 1
+					        local identifier_end = identifier_start + #identifier_seq[1] - 1  
+							
+							if current_char >= identifier_start and current_char <= identifier_end then
+								local global_git_finds = io.popen(string.format("git grep --no-index -n -E 'global[^=]+\\b%s\\b[:= ,]?' $(git rev-parse --show-toplevel)", identifier))
+								local path: string
+								local line: integer
+								for find in global_git_finds:lines() do
+									local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):")
+									if find_info_matched then
+										path = find_info_seq[1]
+										line = tointeger(find_info_seq[2]) - 1
+										local char: integer
+										local go_to_file = file_scheme .. root_uri .. "/" .. path
+										local line_num = 0
+										if documents[go_to_file] ~= "" then
+											for l in documents[go_to_file]:gmatch("([^\n]-)\n") do
+												if line_num == line then
+													char = l:find("[^%w_]".. identifier .. "[^%w_]")
+												end
+												line_num = line_num + 1
+											end
+										else
+											for l in io.open(path):lines() do
+												if line_num == line then
+													char = l:find("[^%w_]".. identifier .. "[^%w_]")
+												end
+												line_num = line_num + 1
+											end
+										end
+										go_to_files:push(go_to_file)
+										go_to_s_lines:push(line)
+										go_to_s_chars:push(char)
+										go_to_e_lines:push(line)
+										go_to_e_chars:push(char + #identifier)
+										goto definition_found
+									end
+								end
+								global_git_finds:close()
+
+								local current_path = current_uri:sub(#file_scheme + 1)
+								local local_git_finds = io.popen(string.format("git grep --no-index -n -E 'local[^=]+\\b%s\\b[:= ,]?' %s", identifier, current_path))
+								local local_find_lines: sequence(integer)
+								for find in local_git_finds:lines() do
+									local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):")
+									if find_info_matched then
+										local line = tointeger(find_info_seq[2])
+										local_find_lines:push(line)
+									end
+								end
+								if #local_find_lines > 0 then
+									local closest_line = local_find_lines[1]
+									local closest_diff = current_line - closest_line
+									for _, v in ipairs(local_find_lines) do
+										local diff = current_line - v
+										if diff < closest_diff then
+											closest_line = v
+										end
+									end
+									local char: integer
+									local line_num = 1
+									for l in current_file:gmatch("([^\n]-)\n") do
+										if line_num == closest_line then
+											char = l:find(identifier) - 1
+										end
+										line_num = line_num + 1
+									end
+									go_to_files:push(current_uri)
+									go_to_s_lines:push(closest_line - 1)
+									go_to_s_chars:push(char)
+									go_to_e_lines:push(closest_line - 1)
+									go_to_e_chars:push(char + #identifier)
+									goto definition_found
+								end
+								local_git_finds:close()
+							end
 						end
 						::definition_found::
 					end
@@ -286,8 +378,8 @@ while true do
 		end
 
 		if request_method == "textDocument/completion" then
-			local response = response.completion(request_id) 
-			io.write(response)
+			local completion_response = response.completion(request_id) 
+			io.write(completion_response)
 			io.flush()
 		end
 	
