@@ -80,15 +80,15 @@ while true do
 				local content_changes = cJSON_GetObjectItem(request_params, "contentChanges")
 				if cJSON_IsArray(content_changes) == 1 then
 					local changes_size = cJSON_GetArraySize(content_changes)
-					-- for change_index = 0, changes_size - 1 do
-						local change_obj = cJSON_GetArrayItem(content_changes, changes_size - 1)
+					for change_index = 0, changes_size - 1 do
+						local change_obj = cJSON_GetArrayItem(content_changes, change_index)
 						local change_text_obj = cJSON_GetObjectItem(change_obj, "text")
 						if cJSON_IsString(change_text_obj) == 1 then
 							local change_text = change_text_obj.valuestring
 							current_file = change_text
 							documents[current_uri] = current_file
 						end					
-					-- end 
+					end 
 				end
 			end
 		end
@@ -194,7 +194,13 @@ while true do
 						for func in line:gmatch("([%w_]+[:%.]?[%w_]+)%s*%(") do
 							local function_word = func:sub(1, #func - 1)
 							if function_word:match("[^:%.]([w%_]+)[^:%.]") then
-								local git_finds = io.popen(string.format("git grep --no-index -n -E 'function.*%s\\(' $(git rev-parse --show-toplevel)", function_word))
+								local git_finds = 
+									io.popen(
+										string.format(
+										"git grep --no-index -n -E 'function.*%s\\(' $(git rev-parse --show-toplevel)", 
+										function_word
+										)
+									)
 								for find in git_finds:lines() do
 									if find:match("function") and find:match("%.nelua") then
 										local func_matched, func_seq = part:match(function_word)
@@ -204,33 +210,33 @@ while true do
 										if current_char >= func_start and current_char <= func_end then
 											local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):")
 											if find_info_matched then
-												local path = find_info_seq[1]
-												local line = tointeger(find_info_seq[2]) - 1
-												local char: integer
+												local find_path = find_info_seq[1]
+												local find_line = tointeger(find_info_seq[2]) - 1
+												local find_char: integer
 												local line_num = 0
-												local go_to_file = file_scheme .. root_uri .. "/" .. path
+												local go_to_file = file_scheme .. root_uri .. "/" .. find_path
 												if documents[go_to_file] ~= "" then
 													for l in documents[go_to_file]:gmatch("([^\n]-)\n") do
-														if line_num == line then
-															char = l:find(function_word) - 1
+														if line_num == find_line then
+															find_char = l:find(function_word) - 1
 															break
 														end
 														line_num = line_num + 1
 													end
 												else
-													for l in io.open(path):lines() do
-														if line_num == line then
-															char = l:find(function_word) - 1
+													for l in io.open(find_path):lines() do
+														if line_num == find_line then
+															find_char = l:find(function_word) - 1
 															break
 														end
 														line_num = line_num + 1
 													end
 												end
 												go_to_files:push(go_to_file)
-												go_to_s_lines:push(line)
-												go_to_s_chars:push(char)
-												go_to_e_lines:push(line)
-												go_to_e_chars:push(char + #function_word)
+												go_to_s_lines:push(find_line)
+												go_to_s_chars:push(find_char)
+												go_to_e_lines:push(find_line)
+												go_to_e_chars:push(find_char + #function_word)
 												goto definition_found
 											end
 										end
@@ -239,7 +245,13 @@ while true do
 								git_finds:close()
 							end
 							if function_word:match("[:%.][%w_]+") then
-								local git_finds = io.popen(string.format("git grep --no-index -n -E 'function.*%s\\(' $(git rev-parse --show-toplevel)", function_word))
+								local git_finds = 
+									io.popen(
+										string.format(
+											"git grep --no-index -n -E 'function.*%s\\(' $(git rev-parse --show-toplevel)", 
+											function_word
+										)
+									)
 								for find in git_finds:lines() do
 									if find:match("function") and find:match("%.nelua") then
 										local func_matched, func_seq = part:match(function_word)
@@ -250,22 +262,22 @@ while true do
 										if current_char >= func_start and current_char <= func_end then
 											local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):")
 											if find_info_matched then
-												local path = find_info_seq[1]
-												local line = tointeger(find_info_seq[2]) - 1
+												local find_path = find_info_seq[1]
+												local find_line = tointeger(find_info_seq[2]) - 1
 												local char: integer
 												local line_num = 0
-												local go_to_file = file_scheme .. root_uri .. "/" .. path
+												local go_to_file = file_scheme .. root_uri .. "/" .. find_path
 												if documents[go_to_file] ~= "" then
 													for l in documents[go_to_file]:gmatch("([^\n]-)\n") do
-														if line_num == line then
+														if line_num == find_line then
 															char = l:find(function_word) - 1
 															break
 														end
 														line_num = line_num + 1
 													end
 												else
-													for l in io.open(path):lines() do
-														if line_num == line then
+													for l in io.open(find_path):lines() do
+														if line_num == find_line then
 															char = l:find(function_word) - 1
 															break
 														end
@@ -273,9 +285,9 @@ while true do
 													end
 												end
 												go_to_files:push(go_to_file)
-												go_to_s_lines:push(line)
+												go_to_s_lines:push(find_line)
 												go_to_s_chars:push(char)
-												go_to_e_lines:push(line)
+												go_to_e_lines:push(find_line)
 												go_to_e_chars:push(char + #function_word)
 												goto definition_found
 											end
@@ -285,83 +297,99 @@ while true do
 							end
 						end
 
-						for identifier in line:gmatch("[^%(%),:%.%[%]%s]([%w_]+)[^%(%),:%.%[%]%s]") do
-							local identifier_matched, identifier_seq = part:match("[^%w_]".. identifier .. "[^%w_]")
+						for identifier in line:gmatch("%f[%w]([%w_]+)%f[%W]") do
+							local identifier_matched, identifier_seq = part:match(identifier)
+							log(identifier_matched)
 							local identifier_start = line:find(identifier_seq[1], start_idx, true) - 1
 					        local identifier_end = identifier_start + #identifier_seq[1] - 1  
 							
 							if current_char >= identifier_start and current_char <= identifier_end then
-								local global_git_finds = io.popen(string.format("git grep --no-index -n -E 'global[^=]+\\b%s\\b[:= ,]?' $(git rev-parse --show-toplevel)", identifier))
+								local global_git_finds = 
+									io.popen(
+										string.format(
+											"git grep --no-index -n -E 'global[^=]+\\b%s\\b[:= ,]?' $(git rev-parse --show-toplevel)", 
+											identifier
+										)
+									)
 								local path: string
-								local line: integer
+								local find_line: integer
 								for find in global_git_finds:lines() do
 									local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):")
 									if find_info_matched then
 										path = find_info_seq[1]
-										line = tointeger(find_info_seq[2]) - 1
+										find_line = tointeger(find_info_seq[2]) - 1
 										local char: integer
 										local go_to_file = file_scheme .. root_uri .. "/" .. path
 										local line_num = 0
 										if documents[go_to_file] ~= "" then
 											for l in documents[go_to_file]:gmatch("([^\n]-)\n") do
-												if line_num == line then
+												if line_num == find_line then
 													char = l:find("[^%w_]".. identifier .. "[^%w_]")
 												end
 												line_num = line_num + 1
 											end
 										else
 											for l in io.open(path):lines() do
-												if line_num == line then
+												if line_num == find_line then
 													char = l:find("[^%w_]".. identifier .. "[^%w_]")
 												end
 												line_num = line_num + 1
 											end
 										end
 										go_to_files:push(go_to_file)
-										go_to_s_lines:push(line)
+										go_to_s_lines:push(find_line)
 										go_to_s_chars:push(char)
-										go_to_e_lines:push(line)
+										go_to_e_lines:push(find_line)
 										go_to_e_chars:push(char + #identifier)
 										goto definition_found
 									end
 								end
 								global_git_finds:close()
 
-								local current_path = current_uri:sub(#file_scheme + 1)
-								local local_git_finds = io.popen(string.format("git grep --no-index -n -E 'local[^=]+\\b%s\\b[:= ,]?' %s", identifier, current_path))
-								local local_find_lines: sequence(integer)
-								for find in local_git_finds:lines() do
-									local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):")
-									if find_info_matched then
-										local line = tointeger(find_info_seq[2])
-										local_find_lines:push(line)
+								local local_line_num = 0
+								for l in current_file:gmatch("([^\n]-)\n") do
+									if l:match("local[^=]+" .. identifier .. "[:= ,]") then
+										local find_char = l:find("[^%w_]".. identifier .. "[^%w_]")
+										
+										go_to_files:push(current_uri)
+										go_to_s_lines:push(local_line_num)
+										go_to_s_chars:push(find_char)
+										go_to_e_lines:push(local_line_num)
+										go_to_e_chars:push(find_char + #identifier)
+										goto definition_found
 									end
+									local_line_num = local_line_num + 1
 								end
-								if #local_find_lines > 0 then
-									local closest_line = local_find_lines[1]
-									local closest_diff = current_line - closest_line
-									for _, v in ipairs(local_find_lines) do
-										local diff = current_line - v
-										if diff < closest_diff then
-											closest_line = v
-										end
+
+								local for_line_num = 0
+								for l in current_file:gmatch("([^\n]-)\n") do
+									if l:match("for.*" .. identifier .. "%sin") then
+										local find_char = l:find("[^%w_]".. identifier .. "[^%w_]")
+										
+										go_to_files:push(current_uri)
+										go_to_s_lines:push(for_line_num)
+										go_to_s_chars:push(find_char)
+										go_to_e_lines:push(for_line_num)
+										go_to_e_chars:push(find_char + #identifier)
+										goto definition_found
 									end
-									local char: integer
-									local line_num = 1
-									for l in current_file:gmatch("([^\n]-)\n") do
-										if line_num == closest_line then
-											char = l:find(identifier) - 1
-										end
-										line_num = line_num + 1
-									end
-									go_to_files:push(current_uri)
-									go_to_s_lines:push(closest_line - 1)
-									go_to_s_chars:push(char)
-									go_to_e_lines:push(closest_line - 1)
-									go_to_e_chars:push(char + #identifier)
-									goto definition_found
+									for_line_num = for_line_num + 1
 								end
-								local_git_finds:close()
+
+								local goto_line_num = 0
+								for l in current_file:gmatch("([^\n]-)\n") do
+									if l:match("::" .. identifier .. "::") then
+										local find_char = l:find("::".. identifier .. "::") - 1
+										
+										go_to_files:push(current_uri)
+										go_to_s_lines:push(goto_line_num)
+										go_to_s_chars:push(find_char)
+										go_to_e_lines:push(goto_line_num)
+										go_to_e_chars:push(find_char + #identifier + #"::::")
+										goto definition_found
+									end
+									goto_line_num = goto_line_num + 1
+								end
 							end
 						end
 						::definition_found::
