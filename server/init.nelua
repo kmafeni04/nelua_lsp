@@ -1,0 +1,54 @@
+local initialize = require '.initialize'
+local did_close = require '.did_close'
+local did_open = require '.did_open'
+local did_change = require '.did_change'
+local hover = require '.hover'
+local go_to_definition = require '.go_to_definition'
+local completion = require '.completion'
+local shutdown = require '.shutdown'
+
+global server = @record{}
+
+function server.initialize(request_id: integer)
+	initialize(request_id)
+end
+
+function server.did_close(documents: hashmap(string, string), current_uri: string)
+	did_close(documents, current_uri)
+end
+
+function server.did_open(
+	root_uri: string,
+	current_uri: string,
+	current_file: string,
+	documents: hashmap(string,string)
+)
+	did_open(root_uri, current_uri, current_file, documents)
+end
+
+function server.did_change(documents: hashmap(string, string), request_params: *cJSON, current_uri: string)
+	did_change(documents, request_params, current_uri)
+end
+
+function server.hover(request_id: integer)
+	hover(request_id)
+end
+
+function server.go_to_definition(
+	root_uri: string,
+	request_params: *cJSON,
+	request_id: integer,
+	documents: hashmap(string, string),
+	current_uri: string,
+	current_file: string
+)
+	go_to_definition(root_uri, request_params, request_id, documents, current_uri, current_file)
+end
+
+function server.completion(request_id: integer)
+	completion(request_id)
+end
+
+function server.shutdown()
+	shutdown()
+end

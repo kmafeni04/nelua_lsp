@@ -1,0 +1,19 @@
+-- TODO: Find out how to speed this up 
+local function did_change(documents: hashmap(string, string), request_params: *cJSON, current_uri: string)
+	if documents[current_uri] ~= nil then
+		local content_changes = cJSON_GetObjectItem(request_params, "contentChanges")
+		if cJSON_IsArray(content_changes) == 1 then
+			local changes_size = cJSON_GetArraySize(content_changes)
+			for change_index = 0, changes_size - 1 do
+				local change_obj = cJSON_GetArrayItem(content_changes, change_index)
+				local change_text_obj = cJSON_GetObjectItem(change_obj, "text")
+				if cJSON_IsString(change_text_obj) == 1 then
+					local current_file = change_text_obj.valuestring
+					documents[current_uri] = current_file
+				end					
+			end 
+		end
+	end
+end
+
+return did_change

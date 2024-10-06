@@ -1,6 +1,5 @@
+require 'lib.cjson'
 require 'string'
-require 'utils.cjson'
-
 
 global rpc = @record{}
 

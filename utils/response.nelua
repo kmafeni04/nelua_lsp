@@ -1,5 +1,4 @@
-require 'iterators'
-
+require 'lib.cjson'
 require '.rpc'
 
 global response = @record{}

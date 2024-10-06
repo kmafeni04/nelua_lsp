@@ -1,0 +1,5 @@
+local function did_close(documents: hashmap(string, string), current_uri: string)
+	documents:remove(current_uri)
+end 
+
+return did_close

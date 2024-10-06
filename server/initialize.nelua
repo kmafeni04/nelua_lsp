@@ -1,0 +1,9 @@
+require 'utils.response'
+
+local function initialize(request_id: integer)
+	local intialize_response = response.initialize(request_id) 
+	io.write(intialize_response)
+	io.flush()
+end
+
+return initialize
