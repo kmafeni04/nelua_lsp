@@ -1,13 +1,13 @@
+require 'utils.logger'
+
 local function did_open(
 	root_uri: string,
 	current_uri: string,
-	current_file: string,
-	documents: hashmap(string,
-	string)
+	current_file: string
 )
 	local current_file_path = current_uri:sub(#("file://") + #root_uri + 2)
 	current_file = io.open(current_file_path):read("a")
-	documents[current_uri] = current_file
+	return current_file
 end
 
 return did_open

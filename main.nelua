@@ -1,5 +1,6 @@
 require 'io'
 require 'os'
+require 'string'
 require 'iterators'
 
 require 'server'
@@ -45,7 +46,8 @@ while true do
 		end
 
 		if request_method == "textDocument/didOpen" then
-			server.did_open(root_uri, current_uri, current_file, documents)
+			current_file = server.did_open(root_uri, current_uri, current_file)
+			documents[current_uri] = current_file
 		end
 
 		if request_method == "textDocument/didClose" then
@@ -53,7 +55,8 @@ while true do
 		end
 
 		if request_method == "textDocument/didChange" then
-			server.did_change(documents, request_params)
+			current_file = server.did_change(documents, request_params, current_uri)
+			documents[current_uri] = current_file
 		end
 
 		if request_method == "textDocument/hover" then

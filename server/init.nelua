@@ -1,7 +1,7 @@
 local initialize = require '.initialize'
-local did_close = require '.did_close'
 local did_open = require '.did_open'
 local did_change = require '.did_change'
+local did_close = require '.did_close'
 local hover = require '.hover'
 local go_to_definition = require '.go_to_definition'
 local completion = require '.completion'
@@ -13,21 +13,27 @@ function server.initialize(request_id: integer)
 	initialize(request_id)
 end
 
-function server.did_close(documents: hashmap(string, string), current_uri: string)
-	did_close(documents, current_uri)
-end
-
 function server.did_open(
 	root_uri: string,
 	current_uri: string,
-	current_file: string,
-	documents: hashmap(string,string)
-)
-	did_open(root_uri, current_uri, current_file, documents)
+	current_file: string
+): string
+	return did_open(root_uri, current_uri, current_file)
 end
 
-function server.did_change(documents: hashmap(string, string), request_params: *cJSON, current_uri: string)
-	did_change(documents, request_params, current_uri)
+function server.did_change(
+	documents: hashmap(string, string),
+	request_params: *cJSON,
+	current_uri: string
+): string
+	return did_change(documents, request_params, current_uri)
+end
+
+function server.did_close(
+	documents: hashmap(string, string), 
+	current_uri: string
+)	
+	return did_close(documents, current_uri)
 end
 
 function server.hover(request_id: integer)
@@ -42,7 +48,14 @@ function server.go_to_definition(
 	current_uri: string,
 	current_file: string
 )
-	go_to_definition(root_uri, request_params, request_id, documents, current_uri, current_file)
+	go_to_definition(
+		root_uri,
+		request_params,
+		request_id,
+		documents,
+		current_uri,
+		current_file
+	)
 end
 
 function server.completion(request_id: integer)

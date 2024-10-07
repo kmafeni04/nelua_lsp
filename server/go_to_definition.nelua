@@ -1,3 +1,4 @@
+require 'utils.logger'
 require 'utils.response'
 
 local function go_to_definition(
@@ -20,7 +21,7 @@ local function go_to_definition(
 	if cJSON_IsNumber(current_char_obj) == 1 then
 		current_char = current_char_obj.valueint
 	end
-	if documents[current_uri] ~= nil then
+	if documents:peek(current_uri) ~= nilptr then
 		current_file = documents[current_uri]
 	end
 
@@ -34,6 +35,7 @@ local function go_to_definition(
 	local line_num: integer
 
 	for line in current_file:gmatch("([^\n]-)\n") do
+
 		if line_num == current_line then
 
 			local start_idx, end_idx = current_char, current_char
@@ -51,7 +53,7 @@ local function go_to_definition(
 			for part in phrase:gmatch("[^,]+") do
 			    if line:match("require") then
 
-					local path_matched, path_seq = part:match("require%s*[%(]?%s*['\"]([%w%.]+)['\"]%s*[%)]?")
+					local path_matched, path_seq = part:match([[require%s*[%(]?%s*['"]([%w_%.]+)['"]%s*[%)]?]])
 					local path_start = line:find(path_seq[1], start_idx, true)
 			        local path_end = path_start + #path_seq[1] - 1  
 
@@ -60,10 +62,20 @@ local function go_to_definition(
 						local root_matched = path_seq[1]:match("%w+%.*%w*")
 						if root_matched then
 							local path = path_seq[1]:gsub("%.","/") .. ".nelua"
+							local init_path = path_seq[1]:gsub("%.","/") .. "/init.nelua"
 							local git_paths = io.popen("git ls-files && git ls-files --others")
 							for git_path in git_paths:lines() do
 								if git_path == path then
 									local go_to_file = file_scheme .. root_uri .. "/" .. path
+									go_to_files:push(go_to_file)
+									go_to_s_lines:push(0)
+									go_to_s_chars:push(0)
+									go_to_e_lines:push(0)
+									go_to_e_chars:push(0)
+									goto definition_found
+								end
+								if git_path == init_path then
+									local go_to_file = file_scheme .. root_uri .. "/" .. init_path
 									go_to_files:push(go_to_file)
 									go_to_s_lines:push(0)
 									go_to_s_chars:push(0)
@@ -100,6 +112,144 @@ local function go_to_definition(
 			        end
 			    end
 
+				for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
+					-- TODO: Need to make a check if the identifier appears multiple times in a line as it currently logs the same identifier start
+					local identifier_matched, identifier_seq = part:match("[^w_]" .. identifier)
+					local identifier_start = line:find(identifier_seq[1], start_idx, true) - 1
+			        local identifier_end = identifier_start + #identifier_seq[1] - 1  
+					if current_char >= identifier_start and current_char <= identifier_end then
+						local global_git_finds = 
+							io.popen(
+								string.format(
+									"git grep --no-index -n -E 'global[^=]+\\b%s\\b[:=\\s,]?' $(git rev-parse --show-toplevel)", 
+									identifier
+								)
+							)
+						local path: string
+						local find_line: integer
+						for find in global_git_finds:lines() do
+							local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):")
+							if find_info_matched then
+								path = find_info_seq[1]
+								find_line = tointeger(find_info_seq[2]) - 1
+								local char: integer
+								local go_to_file = file_scheme .. root_uri .. "/" .. path
+								local line_num = 0
+								if documents:peek(go_to_file) ~= nilptr then
+									for l in documents[go_to_file]:gmatch("([^\n]-)\n") do
+										if line_num == find_line then
+											char = l:find("[^%w_]".. identifier .. "[^%w_]")
+										end
+										line_num = line_num + 1
+									end
+								else
+									for l in io.open(path):lines() do
+										if line_num == find_line then
+											char = l:find("[^%w_]".. identifier .. "[^%w_]")
+										end
+										line_num = line_num + 1
+									end
+								end
+								go_to_files:push(go_to_file)
+								go_to_s_lines:push(find_line)
+								go_to_s_chars:push(char)
+								go_to_e_lines:push(find_line)
+								go_to_e_chars:push(char + #identifier)
+								goto definition_found
+							end
+						end
+						global_git_finds:close()
+
+						local local_line_num = 0
+						local local_find_lines: sequence(integer)
+						for l in current_file:gmatch("([^\n]-)\n") do
+							if l:match("local[^=]+%f[%w_]" .. identifier .. "%f[^%w_][:=%s,]") then
+								local_find_lines:push(local_line_num)
+							end
+							local_line_num = local_line_num + 1
+						end
+						if #local_find_lines > 0 then
+							local local_closest_line = local_find_lines[1]
+							local local_closest_diff = current_line - local_closest_line
+							for i = 1, #local_find_lines do
+								local diff = current_line - local_find_lines[i] 
+								if diff < local_closest_diff and diff >= 0  then
+									local_closest_line = local_find_lines[i]
+								end
+							end
+							local local_line_num = 0
+							local find_char:integer
+							for l in current_file:gmatch("([^\n]-)\n") do
+								if local_line_num == local_closest_line and l:match("local[^=]+%f[%w_]" .. identifier .. "%f[^%w_][:=%s,]") then
+									find_char = l:find("[^%w_]".. identifier .. "[^%w_]")
+									break
+								end
+								local_line_num = local_line_num + 1
+							end
+							go_to_files:push(current_uri)
+							go_to_s_lines:push(local_closest_line)
+							go_to_s_chars:push(find_char)
+							go_to_e_lines:push(local_closest_line)
+							go_to_e_chars:push(find_char + #identifier)
+							goto definition_found
+						end
+
+						local for_line_num = 0
+						local for_find_lines: sequence(integer)
+						for l in current_file:gmatch("([^\n]-)\n") do
+							if l:match("for.-%f[%w_]" .. identifier .. "%f[%w_][,]%sin") then
+								for_find_lines:push(for_line_num)
+							end
+							for_line_num = for_line_num + 1
+						end
+
+						if #for_find_lines > 0 then
+							local for_line_num = 0
+							local for_closest_line = for_find_lines[1]
+							logger.log(for_closest_line)
+							local for_closest_diff = current_line - for_closest_line
+							for i = 1, #for_find_lines do
+								local diff = current_line - for_find_lines[i]
+								if diff < for_closest_diff and diff >= 0 then
+									for_closest_line = for_find_lines[i]
+								end
+								for_line_num = for_line_num + 1
+							end
+							logger.log(for_closest_line)
+							
+							local for_line_num = 0
+							local find_char: integer
+							for l in current_file:gmatch("([^\n]-)\n") do
+								if for_line_num == for_closest_line and l:match("for.-%f[%w_]" .. identifier .. "%f[%w_][,]%sin") then
+									find_char = l:find("[^%w_]".. identifier .. "[^%w_]")
+									break
+								end
+								for_line_num = for_line_num + 1
+							end
+							go_to_files:push(current_uri)
+							go_to_s_lines:push(for_closest_line)
+							go_to_s_chars:push(find_char)
+							go_to_e_lines:push(for_closest_line)
+							go_to_e_chars:push(find_char + #identifier)
+							goto definition_found
+						end
+
+						local goto_line_num = 0
+						for l in current_file:gmatch("([^\n]-)\n") do
+							if l:match("::" .. identifier .. "::") then
+								local find_char = l:find("::".. identifier .. "::") - 1
+								
+								go_to_files:push(current_uri)
+								go_to_s_lines:push(goto_line_num)
+								go_to_s_chars:push(find_char)
+								go_to_e_lines:push(goto_line_num)
+								go_to_e_chars:push(find_char + #identifier + #"::::")
+								goto definition_found
+							end
+							goto_line_num = goto_line_num + 1
+						end
+					end
+				end
 				for func in line:gmatch("([%w_]+[:%.]?[%w_]+)%s*%(") do
 					local function_word = func:sub(1, #func - 1)
 					if function_word:match("[^:%.]([w%_]+)[^:%.]") then
@@ -124,7 +274,7 @@ local function go_to_definition(
 										local find_char: integer
 										local line_num = 0
 										local go_to_file = file_scheme .. root_uri .. "/" .. find_path
-										if documents[go_to_file] ~= "" then
+										if documents:peek(go_to_file) ~= nilptr and find_path:match(".nelua") then
 											for l in documents[go_to_file]:gmatch("([^\n]-)\n") do
 												if line_num == find_line then
 													find_char = l:find(function_word) - 1
@@ -176,7 +326,7 @@ local function go_to_definition(
 										local char: integer
 										local line_num = 0
 										local go_to_file = file_scheme .. root_uri .. "/" .. find_path
-										if documents[go_to_file] ~= "" then
+										if documents:peek(go_to_file) ~= nilptr and find_path:match(".nelua") then
 											for l in documents[go_to_file]:gmatch("([^\n]-)\n") do
 												if line_num == find_line then
 													char = l:find(function_word) - 1
@@ -205,101 +355,6 @@ local function go_to_definition(
 						end
 					end
 				end
-
-				for identifier in line:gmatch("%f[%w]([%w_]+)%f[%W]") do
-					local identifier_matched, identifier_seq = part:match("[^w_]" .. identifier)
-					local identifier_start = line:find(identifier_seq[1], start_idx, true) - 1
-			        local identifier_end = identifier_start + #identifier_seq[1] - 1  
-					
-					if current_char >= identifier_start and current_char <= identifier_end then
-						local global_git_finds = 
-							io.popen(
-								string.format(
-									"git grep --no-index -n -E 'global[^=]+\\b%s\\b[:= ,]?' $(git rev-parse --show-toplevel)", 
-									identifier
-								)
-							)
-						local path: string
-						local find_line: integer
-						for find in global_git_finds:lines() do
-							local find_info_matched, find_info_seq = find:match("([^:]+):(%d+):")
-							if find_info_matched then
-								path = find_info_seq[1]
-								find_line = tointeger(find_info_seq[2]) - 1
-								local char: integer
-								local go_to_file = file_scheme .. root_uri .. "/" .. path
-								local line_num = 0
-								if documents[go_to_file] ~= "" then
-									for l in documents[go_to_file]:gmatch("([^\n]-)\n") do
-										if line_num == find_line then
-											char = l:find("[^%w_]".. identifier .. "[^%w_]")
-										end
-										line_num = line_num + 1
-									end
-								else
-									for l in io.open(path):lines() do
-										if line_num == find_line then
-											char = l:find("[^%w_]".. identifier .. "[^%w_]")
-										end
-										line_num = line_num + 1
-									end
-								end
-								go_to_files:push(go_to_file)
-								go_to_s_lines:push(find_line)
-								go_to_s_chars:push(char)
-								go_to_e_lines:push(find_line)
-								go_to_e_chars:push(char + #identifier)
-								goto definition_found
-							end
-						end
-						global_git_finds:close()
-
-						local local_line_num = 0
-						for l in current_file:gmatch("([^\n]-)\n") do
-							if l:match("local[^=]+" .. identifier .. "[:= ,]") then
-								local find_char = l:find("[^%w_]".. identifier .. "[^%w_]")
-								
-								go_to_files:push(current_uri)
-								go_to_s_lines:push(local_line_num)
-								go_to_s_chars:push(find_char)
-								go_to_e_lines:push(local_line_num)
-								go_to_e_chars:push(find_char + #identifier)
-								goto definition_found
-							end
-							local_line_num = local_line_num + 1
-						end
-
-						local for_line_num = 0
-						for l in current_file:gmatch("([^\n]-)\n") do
-							if l:match("for.*" .. identifier .. "%sin") then
-								local find_char = l:find("[^%w_]".. identifier .. "[^%w_]")
-								
-								go_to_files:push(current_uri)
-								go_to_s_lines:push(for_line_num)
-								go_to_s_chars:push(find_char)
-								go_to_e_lines:push(for_line_num)
-								go_to_e_chars:push(find_char + #identifier)
-								goto definition_found
-							end
-							for_line_num = for_line_num + 1
-						end
-
-						local goto_line_num = 0
-						for l in current_file:gmatch("([^\n]-)\n") do
-							if l:match("::" .. identifier .. "::") then
-								local find_char = l:find("::".. identifier .. "::") - 1
-								
-								go_to_files:push(current_uri)
-								go_to_s_lines:push(goto_line_num)
-								go_to_s_chars:push(find_char)
-								go_to_e_lines:push(goto_line_num)
-								go_to_e_chars:push(find_char + #identifier + #"::::")
-								goto definition_found
-							end
-							goto_line_num = goto_line_num + 1
-						end
-					end
-				end
 				::definition_found::
 			end
 		end
@@ -307,7 +362,14 @@ local function go_to_definition(
 	end
 
 	-- Should probably improve this
-	go_to_definition = response.definition(go_to_files, go_to_s_lines, go_to_s_chars, go_to_e_lines, go_to_e_chars, request_id) 
+	go_to_definition = response.definition(
+		go_to_files,
+		go_to_s_lines,
+		go_to_s_chars,
+		go_to_e_lines,
+		go_to_e_chars,
+		request_id
+	) 
 	
 	io.write(go_to_definition)
 	io.flush()
