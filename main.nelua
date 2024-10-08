@@ -30,7 +30,7 @@ while true do
 		stdin:writef("%s", io.read(content_length))
 	end
 	
-	local request, err = json.decode(tostring(stdin))
+	local request, err = json.decode(stdin:promote())
 	if err == "" then
 		local request_method_obj = cJSON_GetObjectItem(request, "method") 
 		local request_method = request_method_obj.valuestring
@@ -85,7 +85,5 @@ while true do
 		if request_method == "exit" then
 			server.exit()
 		end
-
-		stdin:destroy()
 	end
 end
