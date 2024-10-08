@@ -1,6 +1,5 @@
 require 'utils.logger'
 
--- TODO: Find out how to speed this up 
 local function did_change(
 	documents: hashmap(string,string),
 	request_params: *cJSON,

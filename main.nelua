@@ -11,7 +11,7 @@ require 'utils.logger'
 
 logger.init()
 
-local stdin: string
+local stdin: stringbuilder
 local documents: hashmap(string, string)
 local current_file: string
 local current_uri: string
@@ -21,9 +21,17 @@ local root_uri: string = root_uri_prog:read()
 
 
 while true do
-	stdin = stdin .. io.read(1)
+	local header = io.read("l")
+	stdin:writef("%s", header .. "\r\n\r\n")
+
+	local header_match, header_seq = header:match(":%s(%d+)")
+	if header_match then
+		local content_length = tointeger(header_seq[1])
+		io.read("l")
+		stdin:writef("%s", io.read(content_length))
+	end
 	
-	local request, content_len, err = rpc.decode(stdin)
+	local request, content_len, err = rpc.decode(tostring(stdin))
 	if err == "" then
 		local request_method_obj = cJSON_GetObjectItem(request, "method") 
 		local request_method = request_method_obj.valuestring
@@ -75,6 +83,6 @@ while true do
 			server.shutdown()
 		end
 
-		stdin = ""
+		stdin:destroy()
 	end
 end
