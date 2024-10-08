@@ -4,10 +4,10 @@ This is an early implementation of writing an LSP server the for (nelua)[https:/
 
 ## Goals
 
--[x] Go to Definition (partial)
--[ ] Hover
--[ ] Completions
--[ ] Diagnostics
+- [x] Go to Definition (partial)
+- [ ] Hover
+- [ ] Completions
+- [ ] Diagnostics
 
 ## How to Run
 
