@@ -1,0 +1,20 @@
+require 'lib.cjson'
+
+global json = @record{}
+
+function json.decode(content: string): (*cJSON, string)
+  local result: *cJSON = cJSON_Parse(content)
+
+  if not result then
+    return result, "Failed to parse JSON"
+  end
+  
+  return result, ""
+end
+
+function json.encode(obj: *cJSON)
+  local json = cJSON_PrintUnformatted(obj)
+  local result = "Content-Length: " .. #json .. "\r\n\r\n" .. json
+
+  return result
+end

@@ -1,5 +1,5 @@
 require 'lib.cjson'
-require '.rpc'
+require '.json'
 
 global response = @record{}
 
@@ -62,7 +62,7 @@ function response.initialize(request_id: number): string
   
   cJSON_AddItemToObject(initialize_response, "result", result)
   
-  local response = rpc.encode(initialize_response)
+  local response = json.encode(initialize_response)
   cJSON_Delete(initialize_response)
   return response
 end
@@ -79,7 +79,7 @@ function response.hover(request_id: number): string
 
   cJSON_AddItemToObject(hover_response, "result", result)
 
-  local response = rpc.encode(hover_response)
+  local response = json.encode(hover_response)
   cJSON_Delete(hover_response)
   return response
 end
@@ -109,7 +109,7 @@ function response.definition(uris: sequence(string), s_lines: sequence(integer),
   local def_error = cJSON_CreateString("No definition found")
   cJSON_AddItemToObject(definition_response, "error", def_error)
 
-  local response = rpc.encode(definition_response)
+  local response = json.encode(definition_response)
   cJSON_Delete(definition_response)
   return response
 end
@@ -214,7 +214,7 @@ Remarks: Error messages are dependent on the host environment the program is bei
 
   cJSON_AddItemToObject(completion_response, "result", result)
 
-  local response = rpc.encode(completion_response)
+  local response = json.encode(completion_response)
   cJSON_Delete(completion_response)
   return response
 end

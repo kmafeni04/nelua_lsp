@@ -5,7 +5,7 @@ require 'iterators'
 
 require 'server'
 require 'lib.cjson'
-require 'utils.rpc'
+require 'utils.json'
 require 'utils.response'
 require 'utils.logger'
 
@@ -22,7 +22,6 @@ local root_uri: string = root_uri_prog:read()
 
 while true do
 	local header = io.read("l")
-	stdin:writef("%s", header .. "\r\n\r\n")
 
 	local header_match, header_seq = header:match(":%s(%d+)")
 	if header_match then
@@ -31,7 +30,7 @@ while true do
 		stdin:writef("%s", io.read(content_length))
 	end
 	
-	local request, content_len, err = rpc.decode(tostring(stdin))
+	local request, err = json.decode(tostring(stdin))
 	if err == "" then
 		local request_method_obj = cJSON_GetObjectItem(request, "method") 
 		local request_method = request_method_obj.valuestring
