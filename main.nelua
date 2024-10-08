@@ -82,6 +82,10 @@ while true do
 			server.shutdown()
 		end
 
+		if request_method == "exit" then
+			server.exit()
+		end
+
 		stdin:destroy()
 	end
 end

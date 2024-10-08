@@ -1,5 +1,11 @@
+require 'utils.response'
+require 'utils.logger'
+
 local function shutdown()
-	os.exit()
+	logger.log("Server has been shutdown")
+	local shutdown_response = response.shutdown()
+	io.write(shutdown_response)
+	io.flush()
 end 
 
 return shutdown

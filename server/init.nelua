@@ -6,6 +6,7 @@ local hover = require '.hover'
 local go_to_definition = require '.go_to_definition'
 local completion = require '.completion'
 local shutdown = require '.shutdown'
+local exit = require '.exit'
 
 global server = @record{}
 
@@ -64,4 +65,8 @@ end
 
 function server.shutdown()
 	shutdown()
+end
+
+function server.exit()
+	exit()
 end

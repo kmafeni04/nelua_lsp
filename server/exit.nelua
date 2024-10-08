@@ -1,0 +1,5 @@
+local function exit()
+	os.exit()
+end
+
+return exit

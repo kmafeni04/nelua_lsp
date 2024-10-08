@@ -218,3 +218,13 @@ Remarks: Error messages are dependent on the host environment the program is bei
   cJSON_Delete(completion_response)
   return response
 end
+
+function response.shutdown()
+  local shutdown_response = cJSON_CreateObject()
+  local result = cJSON_CreateNull()
+  cJSON_AddItemToObject(shutdown_response, "result", result)
+
+  local response = json.encode(shutdown_response)
+  cJSON_Delete(shutdown_response)
+  return response
+end
