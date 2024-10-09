@@ -112,16 +112,17 @@ local function go_to_definition(
 			        end
 			    end
 
+				local identifier_find_start: integer
 				for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
-					-- TODO: Need to make a check if the identifier appears multiple times in a line as it currently logs the same identifier start
-					local identifier_matched, identifier_seq = part:match("[^w_]" .. identifier)
-					local identifier_start = line:find(identifier_seq[1], start_idx, true) - 1
+					local identifier_matched, identifier_seq = part:match("%f[%w_]" .. identifier .. "%f[^%w_]")
+					local identifier_start = line:find("%f[%w_]" .. identifier_seq[1] .. "%f[^%w_]", identifier_find_start) - 1
+					identifier_find_start = identifier_start + #identifier
 			        local identifier_end = identifier_start + #identifier_seq[1] - 1  
 					if current_char >= identifier_start and current_char <= identifier_end then
 						local global_git_finds = 
 							io.popen(
 								string.format(
-									"git grep --no-index -n -E 'global[^=]+\\b%s\\b[:=\\s,]?' $(git rev-parse --show-toplevel)", 
+									"git grep --no-index -n -E '\\bglobal\\b[^=]+\\b%s\\b[:=\\s,]?' $(git rev-parse --show-toplevel)", 
 									identifier
 								)
 							)
@@ -138,14 +139,14 @@ local function go_to_definition(
 								if documents:peek(go_to_file) ~= nilptr then
 									for l in documents[go_to_file]:gmatch("([^\n]-)\n") do
 										if line_num == find_line then
-											char = l:find("[^%w_]".. identifier .. "[^%w_]")
+											char = l:find("%f[%w_]" .. identifier .. "%f[^%w_]") - 1
 										end
 										line_num = line_num + 1
 									end
 								else
 									for l in io.open(path):lines() do
 										if line_num == find_line then
-											char = l:find("[^%w_]".. identifier .. "[^%w_]")
+											char = l:find("%f[%w_]".. identifier .. "%f[^%w_]") - 1
 										end
 										line_num = line_num + 1
 									end
@@ -160,10 +161,12 @@ local function go_to_definition(
 						end
 						global_git_finds:close()
 
-						local local_line_num = 0
+						local local_line_num: integer
 						local local_find_lines: sequence(integer)
 						for l in current_file:gmatch("([^\n]-)\n") do
-							if l:match("local[^=]+%f[%w_]" .. identifier .. "%f[^%w_][:=%s,]") then
+							local local_line_matched = 
+								l:match("%f[%w_]local%f[^%w_][^=]+%f[%w_]" .. identifier .. "%f[^%w_][:=%s,]")
+							if local_line_matched then
 								local_find_lines:push(local_line_num)
 							end
 							local_line_num = local_line_num + 1
@@ -177,11 +180,13 @@ local function go_to_definition(
 									local_closest_line = local_find_lines[i]
 								end
 							end
-							local local_line_num = 0
-							local find_char:integer
+							local local_line_num: integer
+							local find_char: integer
 							for l in current_file:gmatch("([^\n]-)\n") do
-								if local_line_num == local_closest_line and l:match("local[^=]+%f[%w_]" .. identifier .. "%f[^%w_][:=%s,]") then
-									find_char = l:find("[^%w_]".. identifier .. "[^%w_]")
+								local local_line_matched = 
+									l:match("%f[%w_]local%f[^%w_][^=]+%f[%w_]" .. identifier .. "%f[^%w_][:=%s,]")
+								if local_line_num == local_closest_line and local_line_matched then
+									find_char = l:find("%f[%w_]".. identifier .. "%f[^%w_]") - 1
 									break
 								end
 								local_line_num = local_line_num + 1
@@ -194,19 +199,19 @@ local function go_to_definition(
 							goto definition_found
 						end
 
-						local for_line_num = 0
+						local for_line_num: integer
 						local for_find_lines: sequence(integer)
 						for l in current_file:gmatch("([^\n]-)\n") do
-							if l:match("for.-%f[%w_]" .. identifier .. "%f[%w_][,]%sin") then
+							local for_line_matched = l:match("for.-%f[%w_]" .. identifier .. "%f[^%w_],?%sin")
+							if for_line_matched then
 								for_find_lines:push(for_line_num)
 							end
 							for_line_num = for_line_num + 1
 						end
 
 						if #for_find_lines > 0 then
-							local for_line_num = 0
+							local for_line_num: integer
 							local for_closest_line = for_find_lines[1]
-							logger.log(for_closest_line)
 							local for_closest_diff = current_line - for_closest_line
 							for i = 1, #for_find_lines do
 								local diff = current_line - for_find_lines[i]
@@ -215,13 +220,12 @@ local function go_to_definition(
 								end
 								for_line_num = for_line_num + 1
 							end
-							logger.log(for_closest_line)
 							
-							local for_line_num = 0
+							local for_line_num: integer
 							local find_char: integer
 							for l in current_file:gmatch("([^\n]-)\n") do
-								if for_line_num == for_closest_line and l:match("for.-%f[%w_]" .. identifier .. "%f[%w_][,]%sin") then
-									find_char = l:find("[^%w_]".. identifier .. "[^%w_]")
+								if for_line_num == for_closest_line and l:match("for.-%f[%w_]" .. identifier .. "%f[^%w_],?%sin") then
+									find_char = l:find("%f[%w_]".. identifier .. "%f[^%w_]") - 1
 									break
 								end
 								for_line_num = for_line_num + 1
@@ -248,6 +252,25 @@ local function go_to_definition(
 							end
 							goto_line_num = goto_line_num + 1
 						end
+						-- TODO: Can't be final implementation as it would match any identifier but currently don't know how to ensure it is within the bounds of a function declaration
+						local param_line_num: integer
+						local param_line_num: integer
+						local param_find_lines: sequence(integer)
+						for l in current_file:gmatch("([^\n]-)\n") do
+							local param_line_matched = l:match("%f[%w_]".. identifier .. "%f[^%w_]:")
+							if param_line_matched then
+								local find_char = l:find("%f[%w_]".. identifier .. "%f[^%w_]:") - 1
+
+								go_to_files:push(current_uri)
+								go_to_s_lines:push(param_line_num)
+								go_to_s_chars:push(find_char)
+								go_to_e_lines:push(param_line_num)
+								go_to_e_chars:push(find_char + #identifier)
+								goto definition_found
+							end
+							param_line_num = param_line_num + 1
+						end
+
 					end
 				end
 				for func in line:gmatch("([%w_]+[:%.]?[%w_]+)%s*%(") do
@@ -353,6 +376,7 @@ local function go_to_definition(
 								end
 							end
 						end
+
 					end
 				end
 				::definition_found::

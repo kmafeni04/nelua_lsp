@@ -6,6 +6,9 @@ It is heavily reliant on git to work but I aim to improve on this as much as I c
 ## Goals
 
 - [x] Go to Definition (partial)
+  - TODO:
+    - Proper matching for function parameters
+    - No matching for comments and strings
 - [ ] Hover
 - [ ] Completions
 - [ ] Diagnostics

@@ -22,6 +22,7 @@ local root_uri: string = root_uri_prog:read()
 
 while true do
 	local header = io.read("l")
+	local std: integer
 
 	local header_match, header_seq = header:match(":%s(%d+)")
 	if header_match then
