@@ -67,14 +67,14 @@ function response.initialize(request_id: number): string
   return response
 end
 
-function response.hover(request_id: number): string
+function response.hover(request_id: number, content: string): string
   local hover_response = cJSON_CreateObject()
 
   base_message(hover_response, request_id)
 
   local result = cJSON_CreateObject()
 
-  local contents = cJSON_CreateString("hello")
+  local contents = cJSON_CreateString(content)
   cJSON_AddItemToObject(result, "contents", contents)
 
   cJSON_AddItemToObject(hover_response, "result", result)

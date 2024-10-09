@@ -7,20 +7,11 @@ local function go_to_definition(
 	request_id: integer,
 	documents: hashmap(string, string),
 	current_uri: string,
-	current_file: string
+	current_file: string,
+	current_line: integer,
+	current_char: integer
 )
 
-	local request_position = cJSON_GetObjectItem(request_params , "position") 
-	local current_line_obj = cJSON_GetObjectItem(request_position, "line") 
-	local current_line: integer
-	if cJSON_IsNumber(current_line_obj) == 1 then
-		current_line = current_line_obj.valueint
-	end
-	local current_char_obj = cJSON_GetObjectItem(request_position, "character") 
-	local current_char: integer
-	if cJSON_IsNumber(current_char_obj) == 1 then
-		current_char = current_char_obj.valueint
-	end
 	if documents:peek(current_uri) ~= nilptr then
 		current_file = documents[current_uri]
 	end

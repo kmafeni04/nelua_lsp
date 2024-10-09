@@ -46,6 +46,17 @@ while true do
 		if cJSON_IsString(text_document_uri) == 1 then
 			current_uri = text_document_uri.valuestring
 		end
+		local request_position = cJSON_GetObjectItem(request_params , "position") 
+		local current_line_obj = cJSON_GetObjectItem(request_position, "line") 
+		local current_line: integer
+		if cJSON_IsNumber(current_line_obj) == 1 then
+			current_line = current_line_obj.valueint
+		end
+		local current_char_obj = cJSON_GetObjectItem(request_position, "character") 
+		local current_char: integer
+		if cJSON_IsNumber(current_char_obj) == 1 then
+			current_char = current_char_obj.valueint
+		end
 
 		logger.log("Method: " .. request_method)
 
@@ -68,11 +79,26 @@ while true do
 		end
 
 		if request_method == "textDocument/hover" then
-			server.hover(request_id)
+			server.hover(
+				request_params,
+				request_id,
+				current_file,
+				current_line,
+				current_char
+			)
 		end
 
 		if request_method == "textDocument/definition" then
-			server.go_to_definition(root_uri, request_params, request_id, documents, current_uri, current_file)
+			server.go_to_definition(
+				root_uri,
+				request_params,
+				request_id,
+				documents,
+				current_uri,
+				current_file,
+				current_line,
+				current_char
+			)
 		end
 
 		if request_method == "textDocument/completion" then

@@ -1,7 +1,25 @@
+require 'io'
+
+require 'utils.logger'
 require 'utils.response'
 
-local function hover(request_id: integer)
-	local hover_response = response.hover(request_id)
+local function hover(
+	request_params: *cJSON,
+	request_id: integer,
+	current_file: string,
+	current_line: integer,
+	current_char: integer
+)
+	local line_num = 0
+	for line in current_file:gmatch("[^\n]-\n") do
+		if line_num == current_line then
+			for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
+			end
+		end
+		line_num = line_num + 1
+	end
+	local content: string
+	local hover_response = response.hover(request_id, content)
 	io.write(hover_response)
 	io.flush()
 end
