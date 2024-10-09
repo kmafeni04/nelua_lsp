@@ -18,6 +18,7 @@ It is heavily reliant on git to work but I aim to improve on this as much as I c
 - [git](https://git-scm.com/)
 
 ## How to Run
+To use the current iteration, make sure you are in a git directory
 
 ```sh
   nelua -L /path/to/nelua_lsp /path/to/nelua_lsp/main.nelua
