@@ -57,6 +57,7 @@ while true do
 		if cJSON_IsNumber(current_char_obj) == 1 then
 			current_char = current_char_obj.valueint
 		end
+		local current_file_path = current_uri:sub(#("file://") + #root_uri + 2)
 
 		logger.log("Method: " .. request_method)
 
@@ -65,7 +66,7 @@ while true do
 		end
 
 		if request_method == "textDocument/didOpen" then
-			current_file = server.did_open(root_uri, current_uri, current_file)
+			current_file = server.did_open(current_file_path)
 			documents[current_uri] = current_file
 		end
 
@@ -80,8 +81,8 @@ while true do
 
 		if request_method == "textDocument/hover" then
 			server.hover(
-				request_params,
 				request_id,
+				current_file_path,
 				current_file,
 				current_line,
 				current_char

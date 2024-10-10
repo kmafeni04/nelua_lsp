@@ -1,6 +1,6 @@
 # Nelua LSP
 
-This is an early implementation of writing an LSP server the for [nelua](https://nelua.io/) programming language
+This is an early implementation of writing an LSP server the for [nelua](https://nelua.io) programming language
 It is heavily reliant on git to work but I aim to improve on this as much as I can
 
 ## Goals
@@ -9,16 +9,19 @@ It is heavily reliant on git to work but I aim to improve on this as much as I c
   - TODO:
     - Proper matching for function parameters
     - No matching for comments and strings
-- [ ] Hover
-- [ ] Completions
+- [x] Hover (partial)
+  - TODO:
+    - Check for multiple declarations with different types
 - [ ] Diagnostics
+- [ ] Completions
 
 ## Dependencies
+- [nelua](https://nelua.io)
 - [cjson](https://github.com/DaveGamble/cJSON)
-- [git](https://git-scm.com/)
+- [git](https://git-scm.com)
 
 ## How to Run
-To use the current iteration, make sure you are in a git directory
+To use the current iteration, make sure you are in a local git repo
 
 ```sh
   nelua -L /path/to/nelua_lsp /path/to/nelua_lsp/main.nelua

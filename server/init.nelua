@@ -14,12 +14,8 @@ function server.initialize(request_id: integer)
 	initialize(request_id)
 end
 
-function server.did_open(
-	root_uri: string,
-	current_uri: string,
-	current_file: string
-): string
-	return did_open(root_uri, current_uri, current_file)
+function server.did_open(current_file_path: string): string
+	return did_open(current_file_path)
 end
 
 function server.did_change(
@@ -38,15 +34,15 @@ function server.did_close(
 end
 
 function server.hover(
-	request_params: *cJSON,
 	request_id: integer,
+	current_file_path: string,
 	current_file: string,
 	current_line: integer,
 	current_char: integer
 )
 	hover(
-		request_params,
 		request_id,
+		current_file_path,
 		current_file,
 		current_line,
 		current_char
