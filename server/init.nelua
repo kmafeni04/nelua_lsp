@@ -34,14 +34,18 @@ function server.did_close(
 end
 
 function server.hover(
+	documents: hashmap(string, string),
 	request_id: integer,
+	current_uri: string,
 	current_file_path: string,
 	current_file: string,
 	current_line: integer,
 	current_char: integer
 )
 	hover(
+		documents,
 		request_id,
+		current_uri,
 		current_file_path,
 		current_file,
 		current_line,

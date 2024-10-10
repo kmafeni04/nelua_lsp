@@ -4,12 +4,18 @@ require 'utils.logger'
 require 'utils.response'
 
 local function hover(
+	documents: hashmap(string, string),
 	request_id: integer,
+	current_uri: string,
 	current_file_path: string,
 	current_file: string,
 	current_line: integer,
 	current_char: integer
 )
+	if documents:peek(current_uri) ~= nilptr then
+		current_file = documents[current_uri]
+	end
+
 	local content: string
 
 	local line_num = 0

@@ -81,7 +81,9 @@ while true do
 
 		if request_method == "textDocument/hover" then
 			server.hover(
+				documents,
 				request_id,
+				current_uri,
 				current_file_path,
 				current_file,
 				current_line,
