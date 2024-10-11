@@ -1,4 +1,5 @@
 require 'lib.cjson'
+require '.logger'
 require '.json'
 
 global response = @record{}
@@ -64,6 +65,51 @@ function response.initialize(request_id: number): string
   
   local response = json.encode(initialize_response)
   cJSON_Delete(initialize_response)
+  return response
+end
+
+function response.diagnostic(
+  current_uri: string,
+  line: integer,
+  start_char: integer,
+  end_char: integer,
+  severity: integer,
+  err: string,
+  clear: facultative(boolean)
+)
+  local diagnostice_response = cJSON_CreateObject()
+  cJSON_AddItemToObject(diagnostice_response, "jsonrpc", cJSON_CreateString("2.0"))
+
+  local method = cJSON_CreateString("textDocument/publishDiagnostics")
+  cJSON_AddItemToObject(diagnostice_response, "method", method)
+
+  local params = cJSON_CreateObject()
+
+  cJSON_AddItemToObject(params, "severity", cJSON_CreateNumber(severity))
+
+  local uri = cJSON_CreateString(current_uri)
+  cJSON_AddItemToObject(params, "uri", uri)
+
+  local diagnostics = cJSON_CreateArray()
+
+  if not clear then
+    local diagnostic = cJSON_CreateObject()
+
+    local range = create_range(line, start_char, line, end_char)
+    cJSON_AddItemToObject(diagnostic, "range", range)
+
+    local message = cJSON_CreateString(err)
+    cJSON_AddItemToObject(diagnostic, "message", message)
+
+    cJSON_AddItemToArray(diagnostics, diagnostic)
+  end
+
+  cJSON_AddItemToObject(params, "diagnostics", diagnostics)
+
+  cJSON_AddItemToObject(diagnostice_response, "params", params)
+
+  local response = json.encode(diagnostice_response)
+  cJSON_Delete(diagnostice_response)
   return response
 end
 

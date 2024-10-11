@@ -1,3 +1,5 @@
+require 'os'
+
 local function exit()
 	os.exit()
 end

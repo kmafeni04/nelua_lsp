@@ -1,3 +1,4 @@
+require 'io'
 require 'utils.response'
 
 local function initialize(request_id: integer)

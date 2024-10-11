@@ -1,5 +1,8 @@
+require 'io'
+require 'utils.response'
+
 local function completion(request_id: integer)
-	local completion_response = response.completion(request_id) 
+	local completion_response = response.completion(request_id)
 	io.write(completion_response)
 	io.flush()
 end

@@ -11,8 +11,10 @@ It is heavily reliant on git to work but I aim to improve on this as much as I c
     - No matching for comments and strings
 - [x] Hover (partial)
   - TODO:
-    - Check for multiple declarations with different types
-- [ ] Diagnostics
+    - Check for multiple declarations with different types but same identifier
+- [x] Diagnostics (partial)
+  - TODO:
+    - Figure out how to speed up the updates of checks when document receives changes
 - [ ] Completions
 
 ## Dependencies

@@ -1,4 +1,5 @@
 require 'utils.logger'
+require 'utils.response'
 
 local function did_open(current_file_path: string): string
 	local current_file = io.open(current_file_path):read("a")

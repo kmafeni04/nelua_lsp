@@ -1,4 +1,5 @@
 require 'io'
+require 'os'
 
 require 'utils.logger'
 require 'utils.response'
@@ -28,18 +29,21 @@ local function hover(
 				identifier_find_start = identifier_start + #identifier
 		        local identifier_end = identifier_start + #identifier_seq[1] - 1  
 				if current_char >= identifier_start and current_char <= identifier_end then
-					local ast_prog = io.popen("nelua --print-analyzed-ast " .. current_file_path)
-					local ast_file = ast_prog:read("a")
-					local ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_]' .. identifier .. '%f[^%w_]"')
-					if ast_search_start == 0 then
-						ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_][%w_]+%.' .. identifier .. '%f[^%w_]"')
+					local _, _, ast_exit_code = os.execute("nelua --print-analyzed-ast " .. current_file_path)
+					if ast_exit_code == 0 then
+						local ast_prog = io.popen("nelua --print-analyzed-ast " .. current_file_path)
+						local ast_file = ast_prog:read("a")
+						local ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_]' .. identifier .. '%f[^%w_]"')
+						if ast_search_start == 0 then
+							ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_][%w_]+[%.:]' .. identifier .. '%f[^%w_]"')
+						end
+						logger.log(ast_search_start)
+						logger.log(ast_file:sub(ast_search_start))
+						local ast_type_start = ast_file:find('type = "', ast_search_start)
+						local ast_type_matched, ast_type_seq = ast_file:match('type = "([^"\r\n]+)",', ast_type_start)
+						content = identifier .. "\n\n**Type**:\n```nelua\n" .. ast_type_seq[1] .. "\n```"
+						ast_prog:close()
 					end
-					logger.log(ast_search_start)
-					logger.log(ast_file:sub(ast_search_start))
-					local ast_type_start = ast_file:find('type = "', ast_search_start)
-					local ast_type_matched, ast_type_seq = ast_file:match('type = "([^\"]+)",', ast_type_start)
-					content = "type:\n```nelua\n" .. ast_type_seq[1] .. "\n```"
-					ast_prog:close()
 				end
 			end
 		end
