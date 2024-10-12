@@ -15,9 +15,9 @@ local stdin: stringbuilder
 local documents: hashmap(string, string)
 local current_file: string
 local current_uri: string
-
 local root_uri_prog = io.popen("git rev-parse --show-toplevel")
 local root_uri: string = root_uri_prog:read()
+local no_err: boolean
 
 
 while true do
@@ -71,15 +71,12 @@ while true do
 		if request_method == "textDocument/didOpen" then
 			current_file = server.did_open(current_file_path)
 			documents[current_uri] = current_file
-			local _, _, ast_exit_code = os.execute("nelua -a" .. current_file_path)
-			if ast_exit_code ~= 0 then
-				local ast_prog = io.popen("nelua -a " .. current_file_path .. " 2>&1")
-				local ast = ast_prog:read("a")
 
-				server.diagnostic(ast, current_uri, current_uri, "")
+			no_err = server.diagnostic(current_file_path, current_uri, current_uri, "")
+		end
 
-				ast_prog:close()
-			end
+		if request_method == "textDocument/didSave" then
+			no_err = server.diagnostic(current_file_path, current_uri, current_uri, "")
 		end
 
 		if request_method == "textDocument/didClose" then
@@ -89,22 +86,19 @@ while true do
 		if request_method == "textDocument/didChange" then
 			current_file = server.did_change(documents, request_params, current_uri)
 			documents[current_uri] = current_file
-			local _, _, ast_exit_code = os.execute("nelua -a" .. current_file_path)
-			if ast_exit_code ~= 0 then
-				local tmp_name = os.tmpname()
-				local tmp_file_name = tmp_name .. "." .. current_file_path:gsub("/", ".")
-				local tmp_file = io.open(tmp_file_name, "w")
-				tmp_file:write(current_file)
-				local ast_prog = io.popen("nelua -a " .. tmp_file_name .. " 2>&1")
-				local ast = ast_prog:read("a")
-				local path_sub_tmp = tmp_file_name:sub(1, -#".nelua "):sub(#tmp_name + 2):gsub("%.", "/") .. ".nelua"
+			local tmp_name = os.tmpname():gsub("/", "_")
+			local _, current_file_name_seq = current_file_path:match("[^/]+.nelua")
+			local current_dir = current_file_path:sub(1, #current_file_path - #current_file_name_seq[1])
+			
+			local tmp_file_name = current_dir .. tmp_name .. "." .. current_file_path:gsub("/", ".")
+			local tmp_file = io.open(tmp_file_name, "w")
+			tmp_file:write(current_file)
+			local path_sub_tmp = tmp_file_name:sub(1, -#".nelua "):sub(#current_dir + #tmp_name + 2):gsub("%.", "/") .. ".nelua"
 
-				server.diagnostic(ast, current_uri, path_sub_tmp, tmp_name)
+			no_err = server.diagnostic(tmp_file_name, current_uri, path_sub_tmp, tmp_name)
 
-				tmp_file:close()
-				os.remove(tmp_file_name)
-				ast_prog:close()
-			end
+			tmp_file:close()
+			os.remove(tmp_file_name)
 		end
 
 		if request_method == "textDocument/hover" then
@@ -128,7 +122,8 @@ while true do
 				current_uri,
 				current_file,
 				current_line,
-				current_char
+				current_char,
+				no_err
 			)
 		end
 

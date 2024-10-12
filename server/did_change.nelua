@@ -1,3 +1,6 @@
+require 'hashmap'
+
+require 'lib.cjson'
 require 'utils.logger'
 
 local function did_change(

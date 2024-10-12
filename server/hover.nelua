@@ -37,8 +37,6 @@ local function hover(
 						if ast_search_start == 0 then
 							ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_][%w_]+[%.:]' .. identifier .. '%f[^%w_]"')
 						end
-						logger.log(ast_search_start)
-						logger.log(ast_file:sub(ast_search_start))
 						local ast_type_start = ast_file:find('type = "', ast_search_start)
 						local ast_type_matched, ast_type_seq = ast_file:match('type = "([^"\r\n]+)",', ast_type_start)
 						content = identifier .. "\n\n**Type**:\n```nelua\n" .. ast_type_seq[1] .. "\n```"

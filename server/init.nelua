@@ -20,12 +20,12 @@ function server.did_open(current_file_path: string): string
 end
 
 function server.diagnostic(
-	ast: string,
+	current_file_path: string,
 	current_uri: string,
 	current_path: string,
 	tmp_name: string
-)
-	diagnostic(ast, current_uri, current_path, tmp_name)
+): boolean
+	return diagnostic(current_file_path, current_uri, current_path, tmp_name)
 end
 
 function server.did_change(
@@ -71,7 +71,8 @@ function server.go_to_definition(
 	current_uri: string,
 	current_file: string,
 	current_line: integer,
-	current_char: integer
+	current_char: integer,
+	no_err: boolean
 )
 	go_to_definition(
 		root_uri,
@@ -81,7 +82,8 @@ function server.go_to_definition(
 		current_uri,
 		current_file,
 		current_line,
-		current_char
+		current_char,
+		no_err
 	)
 end
 

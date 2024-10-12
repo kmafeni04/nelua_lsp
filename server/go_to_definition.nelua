@@ -1,3 +1,5 @@
+require 'io'
+
 require 'utils.logger'
 require 'utils.response'
 
@@ -9,7 +11,8 @@ local function go_to_definition(
 	current_uri: string,
 	current_file: string,
 	current_line: integer,
-	current_char: integer
+	current_char: integer,
+	no_err: boolean
 )
 
 	if documents:peek(current_uri) ~= nilptr then
@@ -42,6 +45,9 @@ local function go_to_definition(
 			local phrase = line:sub(start_idx, end_idx)
 
 			for part in phrase:gmatch("[^,]+") do
+				if not no_err then
+					goto definition_found
+				end
 			    if line:match("require") then
 
 					local path_matched, path_seq = part:match([[require%s*[%(]?%s*['"]([%w_%.]+)['"]%s*[%)]?]])
