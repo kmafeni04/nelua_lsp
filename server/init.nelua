@@ -1,4 +1,5 @@
 local initialize = require '.initialize'
+local diagnostic = require '.diagnostic'
 local did_open = require '.did_open'
 local did_change = require '.did_change'
 local did_close = require '.did_close'
@@ -16,6 +17,15 @@ end
 
 function server.did_open(current_file_path: string): string
 	return did_open(current_file_path)
+end
+
+function server.diagnostic(
+	ast: string,
+	current_uri: string,
+	current_path: string,
+	tmp_name: string
+)
+	diagnostic(ast, current_uri, current_path, tmp_name)
 end
 
 function server.did_change(

@@ -1,4 +1,5 @@
 require 'io'
+
 require 'utils.response'
 
 local function completion(request_id: integer)

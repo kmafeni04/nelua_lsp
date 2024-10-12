@@ -1,0 +1,99 @@
+require 'string'
+require 'io'
+
+require 'utils.response'
+
+local Severity = @enum{
+	error = 1,
+	warning,
+	information,
+	hint
+}
+
+local Diagnostic = @record{
+	severe: integer,
+	path: string,
+	line: integer,
+	s_char: integer,
+	e_char: integer,
+	msg: string
+}
+
+local function create_diagnostic(ast: string, ast_match: string, severity: integer): Diagnostic
+	local diagnostic: Diagnostic
+
+	for line in ast:gmatch("([^\r\n]+)") do
+		local ast_matched, ast_seq = line:match(ast_match)
+		if ast_matched then
+			local ast_search_start = ast:find(ast_match)
+			local error_len_matched, error_len_seq = ast:match("[~%^]+", ast_search_start) 
+
+			diagnostic.severe = severity
+			diagnostic.path = ast_seq[1]
+			diagnostic.line = tointeger(ast_seq[2]) - 1
+			diagnostic.s_char = tointeger(ast_seq[3]) - 1
+			diagnostic.e_char = diagnostic.s_char + #error_len_seq[1]
+			diagnostic.msg = ast_seq[4]
+		end
+
+	end
+
+	return diagnostic
+end
+
+local function diagnostic(ast: string, current_uri: string, current_path: string, tmp_name: string)
+	if ast:match(":%s+error:") then
+		local diag: Diagnostic = create_diagnostic(ast, "(.-):(%d+):(%d+):%s+error:%s+([^\r\n]+)", Severity.error)
+		local path: string
+		if tmp_name ~= "" then
+			local diag_path_sub_tmp: string
+			if diag.path:match("nelua_") then
+				path = diag.path:sub(1, -#".nelua "):sub(#tmp_name -#"/tmp/" + 2):gsub("%.", "/") .. ".nelua"
+			else
+				path = diag.path 
+			end
+		else 
+			path = diag.path
+		end
+		if current_path:match(path) then
+			local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
+			io.write(diagnostic_response)
+			io.flush()
+		else
+			local extern_msg = diag.path .. ":" .. diag.line + 1 .. ":" .. diag.s_char + 1 .. ": " .. diag.msg
+			local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, diag.severe, extern_msg)
+			io.write(diagnostic_response)
+			io.flush()
+		end
+	elseif ast:match(":%s+syntax error:") then
+		local diag: Diagnostic = create_diagnostic(ast, "(.-):(%d+):(%d+):%s+syntax error:%s+([^\r\n]+)", Severity.error)
+		local path: string
+		if tmp_name ~= "" then
+			local diag_path_sub_tmp: string
+			if diag.path:match("nelua_") then
+				path = diag.path:sub(1, -#".nelua "):sub(#tmp_name -#"/tmp/" + 2):gsub("%.", "/") .. ".nelua"
+			else
+				path = diag.path 
+			end
+		else 
+			path = diag.path
+		end
+
+		if current_path:match(path) then
+			local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
+			io.write(diagnostic_response)
+			io.flush()
+		else
+			local extern_msg = diag.path .. ":" .. diag.line + 1 .. ":" .. diag.s_char + 1 .. ": " .. diag.msg
+			local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, diag.severe, extern_msg)
+			io.write(diagnostic_response)
+			io.flush()
+		end
+	else 
+		local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, 0, "", true)
+		io.write(diagnostic_response)
+		io.flush()
+	end
+end
+
+return diagnostic

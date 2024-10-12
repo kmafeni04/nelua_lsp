@@ -19,37 +19,6 @@ local current_uri: string
 local root_uri_prog = io.popen("git rev-parse --show-toplevel")
 local root_uri: string = root_uri_prog:read()
 
-local Severity = @enum{
-	error = 1,
-	warning,
-	information,
-	hint
-}
-
-local Diagnostic = @record{
-	severe: integer,
-	line: integer,
-	s_char: integer,
-	e_char: integer,
-	msg: string
-}
-
-local function create_diagnostic(ast: string, ast_match: string, severity: integer): Diagnostic
-	local diagnostic: Diagnostic
-
-	local ast_matched, ast_seq = ast:match(ast_match)
-	local ast_search_start = ast:find(ast_match)
-	local error_len_matched, error_len_seq = ast:match("[~%^]+", ast_search_start) 
-
-	diagnostic.severe = severity
-	diagnostic.line = tointeger(ast_seq[1]) - 1
-	diagnostic.s_char = tointeger(ast_seq[2]) - 1
-	diagnostic.e_char = diagnostic.s_char + #error_len_seq[1]
-	diagnostic.msg = ast_seq[3]
-
-	return diagnostic
-end
-
 
 while true do
 	local header = io.read("l")
@@ -106,23 +75,9 @@ while true do
 			if ast_exit_code ~= 0 then
 				local ast_prog = io.popen("nelua -a " .. current_file_path .. " 2>&1")
 				local ast = ast_prog:read("a")
-				if ast:match(":%s+error:") then
-					local diag: Diagnostic = create_diagnostic(ast, ":(%d+):(%d+):%s+error:%s+([^\r\n]+)", Severity.error)
 
-					local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
-					io.write(diagnostic_response)
-					io.flush()
-				elseif ast:match(":%s+syntax error:") then
-					local diag: Diagnostic = create_diagnostic(ast, ":(%d+):(%d+):%s+syntax error:%s+([^\r\n]+)", Severity.error)
+				server.diagnostic(ast, current_uri, current_uri, "")
 
-					local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
-					io.write(diagnostic_response)
-					io.flush()
-				else 
-					local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, 0, "", true)
-					io.write(diagnostic_response)
-					io.flush()
-				end
 				ast_prog:close()
 			end
 		end
@@ -136,28 +91,16 @@ while true do
 			documents[current_uri] = current_file
 			local _, _, ast_exit_code = os.execute("nelua -a" .. current_file_path)
 			if ast_exit_code ~= 0 then
-				local tmp_file_name = os.tmpname()
+				local tmp_name = os.tmpname()
+				local tmp_file_name = tmp_name .. "." .. current_file_path:gsub("/", ".")
 				local tmp_file = io.open(tmp_file_name, "w")
 				tmp_file:write(current_file)
 				local ast_prog = io.popen("nelua -a " .. tmp_file_name .. " 2>&1")
 				local ast = ast_prog:read("a")
-				if ast:match(":%s+error:")then
-					local diag: Diagnostic = create_diagnostic(ast, ":(%d+):(%d+):%s+error:%s+([^\r\n]+)", Severity.error)
+				local path_sub_tmp = tmp_file_name:sub(1, -#".nelua "):sub(#tmp_name + 2):gsub("%.", "/") .. ".nelua"
 
-					local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
-					io.write(diagnostic_response)
-					io.flush()
-				elseif ast:match(":%s+syntax error:")then
-					local diag: Diagnostic = create_diagnostic(ast, ":(%d+):(%d+):%s+syntax error:%s+([^\r\n]+)", Severity.error)
+				server.diagnostic(ast, current_uri, path_sub_tmp, tmp_name)
 
-					local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
-					io.write(diagnostic_response)
-					io.flush()
-				else 
-					local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, 0, "", true)
-					io.write(diagnostic_response)
-					io.flush()
-				end
 				tmp_file:close()
 				os.remove(tmp_file_name)
 				ast_prog:close()

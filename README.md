@@ -14,7 +14,7 @@ It is heavily reliant on git to work but I aim to improve on this as much as I c
     - Check for multiple declarations with different types but same identifier
 - [x] Diagnostics (partial)
   - TODO:
-    - Figure out how to speed up the updates of checks when document receives changes
+    - Diagnostics can be inconsistent
 - [ ] Completions
 
 ## Dependencies

@@ -85,7 +85,6 @@ function response.diagnostic(
 
   local params = cJSON_CreateObject()
 
-  cJSON_AddItemToObject(params, "severity", cJSON_CreateNumber(severity))
 
   local uri = cJSON_CreateString(current_uri)
   cJSON_AddItemToObject(params, "uri", uri)
@@ -100,6 +99,8 @@ function response.diagnostic(
 
     local message = cJSON_CreateString(err)
     cJSON_AddItemToObject(diagnostic, "message", message)
+
+    cJSON_AddItemToObject(diagnostic, "severity", cJSON_CreateNumber(severity))
 
     cJSON_AddItemToArray(diagnostics, diagnostic)
   end

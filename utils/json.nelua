@@ -1,4 +1,5 @@
 require 'string'
+
 require 'lib.cjson'
 
 global json = @record{}
