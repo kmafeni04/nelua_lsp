@@ -14,6 +14,7 @@ It is heavily reliant on git to work but I aim to improve on this as much as I c
     - Check for multiple declarations with different types but same identifier
 - [x] Diagnostics (partial)
   - TODO:
+    - Diagnostics come in quite slowly
     - Diagnostics can be inconsistent
 - [ ] Completions
 
