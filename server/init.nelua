@@ -50,7 +50,8 @@ function server.hover(
 	current_file_path: string,
 	current_file: string,
 	current_line: integer,
-	current_char: integer
+	current_char: integer,
+	no_err: boolean
 )
 	hover(
 		documents,
@@ -59,7 +60,8 @@ function server.hover(
 		current_file_path,
 		current_file,
 		current_line,
-		current_char
+		current_char,
+		no_err
 	)
 end
 

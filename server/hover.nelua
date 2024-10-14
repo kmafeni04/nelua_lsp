@@ -11,8 +11,13 @@ local function hover(
 	current_file_path: string,
 	current_file: string,
 	current_line: integer,
-	current_char: integer
+	current_char: integer,
+	no_err: boolean
 )
+	if not no_err then
+		goto type_found
+	end
+
 	if documents:peek(current_uri) ~= nilptr then
 		current_file = documents[current_uri]
 	end
@@ -27,19 +32,23 @@ local function hover(
 				local identifier_matched, identifier_seq = line:match("%f[%w_]" .. identifier .. "%f[^%w_]")
 				local identifier_start = line:find("%f[%w_]" .. identifier_seq[1] .. "%f[^%w_]", identifier_find_start) - 1
 				identifier_find_start = identifier_start + #identifier
-		        local identifier_end = identifier_start + #identifier_seq[1] - 1  
+        local identifier_end = identifier_start + #identifier_seq[1] - 1  
+
 				if current_char >= identifier_start and current_char <= identifier_end then
 					local _, _, ast_exit_code = os.execute("nelua --print-analyzed-ast " .. current_file_path)
 					if ast_exit_code == 0 then
 						local ast_prog = io.popen("nelua --print-analyzed-ast " .. current_file_path)
 						local ast_file = ast_prog:read("a")
 						local ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_]' .. identifier .. '%f[^%w_]"')
+
 						if ast_search_start == 0 then
 							ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_][%w_]+[%.:]' .. identifier .. '%f[^%w_]"')
 						end
+
 						local ast_type_start = ast_file:find('type = "', ast_search_start)
 						local ast_type_matched, ast_type_seq = ast_file:match('type = "([^"\r\n]+)",', ast_type_start)
 						content = identifier .. "\n\n**Type**:\n```nelua\n" .. ast_type_seq[1] .. "\n```"
+
 						ast_prog:close()
 					end
 				end
