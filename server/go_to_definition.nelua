@@ -48,14 +48,13 @@ local function go_to_definition(
 				if not no_err then
 					goto definition_found
 				end
-			    if line:match("require") then
 
+		    if line:match("require") then
 					local path_matched, path_seq = part:match([[require%s*[%(]?%s*['"]([%w_%.]+)['"]%s*[%)]?]])
 					local path_start = line:find(path_seq[1], start_idx, true) - 1
-			        local path_end = path_start + #path_seq[1] - 1  
+	        local path_end = path_start + #path_seq[1] - 1  
 
 					if current_char >= path_start and current_char <= path_end then
-
 						local root_matched = path_seq[1]:match("%w+%.*%w*")
 						if root_matched then
 							local path = path_seq[1]:gsub("%.","/") .. ".nelua"
@@ -106,15 +105,15 @@ local function go_to_definition(
 							end
 							git_paths:close()
 						end
-			        end
-			    end
+	        end
+		    end
 
 				local identifier_find_start: integer
 				for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
 					local identifier_matched, identifier_seq = part:match("%f[%w_]" .. identifier .. "%f[^%w_]")
 					local identifier_start = line:find("%f[%w_]" .. identifier_seq[1] .. "%f[^%w_]", identifier_find_start) - 1
 					identifier_find_start = identifier_start + #identifier
-			        local identifier_end = identifier_start + #identifier_seq[1] - 1  
+	        local identifier_end = identifier_start + #identifier_seq[1] - 1  
 					if current_char >= identifier_start and current_char <= identifier_end then
 						local global_git_finds = 
 							io.popen(
@@ -267,7 +266,6 @@ local function go_to_definition(
 							end
 							param_line_num = param_line_num + 1
 						end
-
 					end
 				end
 				for func in line:gmatch("([%w_]+[:%.]?[%w_]+)%s*%(") do
@@ -373,7 +371,6 @@ local function go_to_definition(
 								end
 							end
 						end
-
 					end
 				end
 				::definition_found::
