@@ -37,7 +37,7 @@ local function hover(
 				if current_char >= identifier_start and current_char <= identifier_end then
 					local _, _, ast_exit_code = os.execute("nelua --print-analyzed-ast " .. current_file_path)
 					if ast_exit_code == 0 then
-						local ast_prog = io.popen("nelua --print-analyzed-ast " .. current_file_path)
+						local ast_prog <close> = io.popen("nelua --print-analyzed-ast " .. current_file_path)
 						local ast_file = ast_prog:read("a")
 						local ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_]' .. identifier .. '%f[^%w_]"')
 
@@ -48,8 +48,7 @@ local function hover(
 						local ast_type_start = ast_file:find('type = "', ast_search_start)
 						local ast_type_matched, ast_type_seq = ast_file:match('type = "([^"\r\n]+)",', ast_type_start)
 						content = identifier .. "\n\n**Type**:\n```nelua\n" .. ast_type_seq[1] .. "\n```"
-
-						ast_prog:close()
+						goto type_found
 					end
 				end
 			end

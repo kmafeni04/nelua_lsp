@@ -16,7 +16,10 @@ It is heavily reliant on git to work but I aim to improve on this as much as I c
   - TODO:
     - Diagnostics come in quite slowly
     - Diagnostics can be inconsistent
-- [ ] Completions
+- [x] Completions (partial)
+  - TODO:
+    - Finish adding completions for stdlib
+    - Completions for known identifiers
 
 ## Dependencies
 - [nelua](https://nelua.io)

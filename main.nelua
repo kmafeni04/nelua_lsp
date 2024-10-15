@@ -15,8 +15,7 @@ local stdin: stringbuilder
 local documents: hashmap(string, string)
 local current_file: string
 local current_uri: string
-local root_uri_prog = io.popen("git rev-parse --show-toplevel")
-local root_uri: string = root_uri_prog:read()
+local root_uri: string = io.popen("git rev-parse --show-toplevel"):read()
 local no_err: boolean
 
 
@@ -91,13 +90,12 @@ while true do
 			local current_dir = current_file_path:sub(1, #current_file_path - #current_file_name_seq[1])
 			
 			local tmp_file_name = current_dir .. tmp_name .. "." .. current_file_path:gsub("/", ".")
-			local tmp_file = io.open(tmp_file_name, "w")
+			local tmp_file <close> = io.open(tmp_file_name, "w")
 			tmp_file:write(current_file)
 			local path_sub_tmp = tmp_file_name:sub(1, -#".nelua "):sub(#current_dir + #tmp_name + 2):gsub("%.", "/") .. ".nelua"
 
 			no_err = server.diagnostic(tmp_file_name, current_uri, path_sub_tmp, tmp_name)
 
-			tmp_file:close()
 			os.remove(tmp_file_name)
 		end
 

@@ -56,6 +56,7 @@ function response.initialize(request_id: number): string
   local completion_trigger_chars = cJSON_CreateArray()
   cJSON_AddItemToArray(completion_trigger_chars, cJSON_CreateString("."))
   cJSON_AddItemToArray(completion_trigger_chars, cJSON_CreateString(":"))
+  cJSON_AddItemToArray(completion_trigger_chars, cJSON_CreateString("@"))
   cJSON_AddItemToObject(completion_provider, "triggerCharacters", completion_trigger_chars)
 
   cJSON_AddItemToObject(capabilities, "completionProvider", completion_provider)

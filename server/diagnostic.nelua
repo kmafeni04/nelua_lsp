@@ -24,8 +24,20 @@ local function create_diagnostic(ast: string, ast_match: string, severity: integ
 	local diagnostic: Diagnostic
 
 	for line in ast:gmatch("([^\r\n]+)") do
+		local extern_err_matched, extern_err_seq = line:match("(.-):(%d+):%s+error:%s+([^\r\n]+)")
+
+		if extern_err_matched then 
+			diagnostic.severe = severity
+			diagnostic.path = extern_err_seq[1]
+			diagnostic.line = tointeger(extern_err_seq[2]) - 1
+			diagnostic.s_char = 0
+			diagnostic.e_char = 1
+			diagnostic.msg = extern_err_seq[3]
+			break
+		end
 		local ast_matched, ast_seq = line:match(ast_match)
-		if ast_matched == true then
+
+		if ast_matched then
 			local ast_search_start = ast:find(ast_match)
 			local error_len_matched, error_len_seq = ast:match("[~%^]+", ast_search_start) 
 
@@ -35,6 +47,7 @@ local function create_diagnostic(ast: string, ast_match: string, severity: integ
 			diagnostic.s_char = tointeger(ast_seq[3]) - 1
 			diagnostic.e_char = diagnostic.s_char + #error_len_seq[1]
 			diagnostic.msg = ast_seq[4]
+			break
 		end
 
 	end

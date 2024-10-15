@@ -63,6 +63,9 @@ local function completion(request_id: integer)
   local keyword_nil = create_completion("", "nil", "nil", InsertTextFormat.PlainText, CompletionItemKind.Keyword)
 	completions:push(keyword_nil)
 
+  local keyword_nilptr = create_completion("", "nilptr", "nilptr", InsertTextFormat.PlainText, CompletionItemKind.Keyword)
+	completions:push(keyword_nilptr)
+
   local keyword_true = create_completion("", "true", "true", InsertTextFormat.PlainText, CompletionItemKind.Keyword)
 	completions:push(keyword_true)
 
@@ -82,15 +85,137 @@ local function completion(request_id: integer)
 	completions:push(keyword_goto)
 ---------------------------------------
 
------------ Primitive Types ----------- 
-  local primitive_type_string= create_completion("", "string", "string", InsertTextFormat.PlainText, CompletionItemKind.Class)
-	completions:push(primitive_type_string)
+----------- Global Variables ----------
+  local global_var_version = create_completion("", "_VERSION", "_VERSION", InsertTextFormat.PlainText, CompletionItemKind.Variable)
+	completions:push(global_var_version)
 
-  local primitive_type_integer= create_completion("", "integer", "integer", InsertTextFormat.PlainText, CompletionItemKind.Class)
+  local global_var_arg = create_completion("", "arg", "arg", InsertTextFormat.PlainText, CompletionItemKind.Variable)
+	completions:push(global_var_arg)
+---------------------------------------
+
+----------- Primitive Types ----------- 
+  local primitive_type_boolean = create_completion("", "boolean", "boolean", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_boolean)
+
+  local primitive_type_number = create_completion("", "number", "number", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_number)
+
+  local primitive_type_integer = create_completion("", "integer", "integer", InsertTextFormat.PlainText, CompletionItemKind.Class)
 	completions:push(primitive_type_integer)
 
-  local primitive_type_number= create_completion("", "number", "number", InsertTextFormat.PlainText, CompletionItemKind.Class)
-	completions:push(primitive_type_number)
+  local primitive_type_uinteger = create_completion("", "uinteger", "uinteger", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_uinteger)
+
+  local primitive_type_byte = create_completion("", "byte", "byte", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_byte)
+
+  local primitive_type_isize = create_completion("", "isize", "isize", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_isize)
+
+  local primitive_type_int8 = create_completion("", "int8", "int8", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_int8)
+
+  local primitive_type_int16 = create_completion("", "int16", "int16", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_int16)
+
+  local primitive_type_int16 = create_completion("", "int16", "int16", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_int16)
+
+  local primitive_type_int32 = create_completion("", "int32", "int32", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_int32)
+
+  local primitive_type_int64 = create_completion("", "int64", "int64", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_int64)
+
+  local primitive_type_int128 = create_completion(
+		"Only supported by some C compilers and architectures",
+		"int128",
+		"int128",
+		InsertTextFormat.PlainText,
+		CompletionItemKind.Class
+	)
+	completions:push(primitive_type_int128)
+
+  local primitive_type_usize = create_completion("", "usize", "usize", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_usize)
+
+  local primitive_type_uint8 = create_completion("", "uint8", "uint8", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_uint8)
+	
+  local primitive_type_uint16 = create_completion("", "uint16", "uint16", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_uint16)
+
+  local primitive_type_uint32 = create_completion("", "uint32", "uint32", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_uint32)
+
+  local primitive_type_uint64 = create_completion("", "uint64", "uint64", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_uint64)
+
+  local primitive_type_uint128 = create_completion(
+		"Only supported by some C compilers and architectures",
+		"uint128",
+		"uint128",
+		InsertTextFormat.PlainText,
+		CompletionItemKind.Class
+	)
+	completions:push(primitive_type_uint128)
+
+  local primitive_type_float32 = create_completion("", "float32", "float32", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_float32)
+
+  local primitive_type_float64 = create_completion("", "float64", "float64", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_float64)
+
+  local primitive_type_float128 = create_completion(
+		"Only supported by some C compilers and architectures",
+		"float128",
+		"float128",
+		InsertTextFormat.PlainText,
+		CompletionItemKind.Class
+	)
+	completions:push(primitive_type_float128)
+
+  local primitive_type_string = create_completion("", "string", "string", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_string)
+
+  local primitive_type_stringbuilderT = create_completion(
+		"",
+		"stringbuilderT",
+		"stringbuilderT",
+		InsertTextFormat.PlainText,
+		CompletionItemKind.Class
+	)
+	completions:push(primitive_type_stringbuilderT)
+
+  local primitive_type_record = create_completion("", "record", "record", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_record)
+
+  local primitive_type_enum = create_completion("", "enum", "enum", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_enum)
+
+  local primitive_type_union = create_completion("", "union", "union", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_union)
+
+  local primitive_type_pointer = create_completion("", "pointer", "pointer", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_pointer)
+	
+  local primitive_type_func = create_completion("", "function", "function($1): $2", InsertTextFormat.Snippet, CompletionItemKind.Class)
+	completions:push(primitive_type_func)
+
+  local primitive_type_span = create_completion("", "span", "span(${1:t})", InsertTextFormat.Snippet, CompletionItemKind.Class)
+	completions:push(primitive_type_span)
+
+  local primitive_type_void = create_completion("", "void", "void", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_void)
+
+  local primitive_type_type = create_completion("", "type", "type", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_type)
+
+  local primitive_type_varargs = create_completion("", "varargs", "varargs", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_varargs)
+
+  local primitive_type_io = create_completion("", "io", "io", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_io)
 ---------------------------------------
 
 ---------- Builtin functions ----------
@@ -181,9 +306,164 @@ global function unlikely(cond: boolean): boolean
 Returns `cond`. This is a branching prediction utility, expecting `cond` to evaluate to `false`.
 ]], "unlikely(cond)", "unlikely", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(builtin_func_unlikely)
+
+  local builtin_func_ipairs = create_completion([[
+```nelua
+global function ipairs(a: container_reference_concept): (auto, auto, integer)
+```
+
+Returns values so that the construction
+
+```nelua
+for i,v in ipairs(a) do body end
+```
+
+will iterate over the index–value pairs of `a` from its first element up to the last. Where `i` is an integer determining the index of the element, and `v` its respective value.
+
+The container `a` must be contiguous, such as `array`, `span`, `vector` or `sequence`.
+]], "ipairs(a)", "ipairs", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(builtin_func_ipairs)
+
+  local builtin_func_mipairs = create_completion([[
+```nelua
+global function mipairs(a: container_reference_concept): (auto, auto, integer)
+```
+
+Like `ipairs` but yields reference to elements values so that you can modify them in-place.
+]], "mipairs(a)", "mipairs", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(builtin_func_mipairs)
+
+  local builtin_func_next = create_completion([[
+```nelua
+global function next(a: container_reference_concept, k: auto): (auto, auto, auto)
+```
+
+Gets the next element after key `k` for the container `a`.
+
+In case of success returns `true` plus the next element key and the next element value. Otherwise returns `false` plus a zeroed key and value.
+
+The container `a` must either have the metamethod `__next` or be a contiguous.
+]], "next(a, k)", "next", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(builtin_func_next)
+
+  local builtin_func_mnext = create_completion([[
+```nelua
+global function mnext(a: container_reference_concept, k: auto): (auto, auto, auto)
+```
+
+Like `next` but returns reference to the next element value, so that you can modify it in-place.
+]], "mnext(a, k)", "mnext", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(builtin_func_mnext)
+
+  local builtin_func_pairs = create_completion([[
+```nelua
+global function pairs(a: container_reference_concept): (auto, auto, auto)
+```
+
+Returns values so that the construction
+
+```nelua
+for k,v in pairs(a) do body end
+```
+
+will iterate over all the key–value pairs of `a`. Where `k` is a key determining the location of the element, and `v` its respective value.
+
+The container `a` must either have the metamethod `__pairs` or be a contiguous. Should work on any container, such as `array`, `span`, `vector`, `sequence` or `hashmap`.
+]], "pairs(a, k)", "pairs", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(builtin_func_pairs)
+
+  local builtin_func_mpairs = create_completion([[
+```nelua
+global function mpairs(a: container_reference_concept): (auto, auto, auto)
+```
+
+Like `pairs` but yields reference to elements values so that you can modify them in-place.
+]], "mpairs(a, k)", "mpairs", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(builtin_func_mpairs)
+
+  local builtin_func_select = create_completion([[
+```nelua
+global function select(index: auto <comptime>, ...: varargs)
+```
+
+If `index` is a number, returns all arguments after argument number index; a negative number indexes from the end (`-1` is the last argument). Otherwise, `index` must be the string ‘#’, and select returns the total number of extra arguments it received.
+]], "select(a, k)", "select", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(builtin_func_select)
 ---------------------------------------
 
--------------- Snippets --------------
+-- TODO: Finish IO completions
+----------------- Io ------------------
+  local io_stderr = create_completion([[
+```nelua
+global io.stderr: filestream
+```
+
+Default error output file handle.
+]], "io.stderr", "io.stderr", InsertTextFormat.PlainText, CompletionItemKind.Field)
+	completions:push(io_stderr)
+
+  local io_stdout = create_completion([[
+```nelua
+global io.stdout: filestream
+```
+
+Default output file handle.
+]], "io.stdout", "io.stdout", InsertTextFormat.PlainText, CompletionItemKind.Field)
+	completions:push(io_stdout)
+
+  local io_stdin = create_completion([[
+```nelua
+global io.stdin: filestream
+```
+
+Default input file handle.
+]], "io.stdin", "io.stdin", InsertTextFormat.PlainText, CompletionItemKind.Field)
+	completions:push(io_stdin)
+
+  local io_open = create_completion([[
+```nelua
+function io.open(filename: string, mode: facultative(string)) : (filestream, string, integer)
+```
+
+Opens a file, in the `mode` specified in the string mode. In case of success, it returns an open file.
+
+Equivalent to `filestream:open(filename, mode)`.
+]], "io.open(f, m?)", "io.open", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_open)
+
+  local io_popen = create_completion([[
+```nelua
+function io.popen(prog: string, mode: facultative(string)) : (filestream, string, integer)
+```
+
+Starts the program `prog` in a separated process and returns a file handle that you can use to read data from this program (if `mode` is “r”, the default) or to write data to this program (if `mode` is “w”). This function is system dependent and is not available on all platforms.
+]], "io.popen(p, m?)", "io.popen", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_popen)
+
+  local io_close = create_completion([[
+```nelua
+function io.close(file: facultative(filestream)): (boolean, string, integer)
+```
+
+Closes a `file`. Without a file, closes the default output file.
+
+Equivalent to `file:close()`.
+]], "io.close(p, m?)", "io.close", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_close)
+
+  local io_flush = create_completion([[
+```nelua
+function io.flush(file: facultative(filestream)): (boolean, string, integer)
+```
+
+flushs a `file`. Without a file, flushs the default output file.
+
+Equivalent to `file:flush()`.
+]], "io.flush(p, m?)", "io.flush", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_flush)
+---------------------------------------
+
+-------------- Snippets ---------------
   local snippet_if = create_completion("", "if .. then", "if $1 then\n\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_if)
 
@@ -226,6 +506,15 @@ Returns `cond`. This is a branching prediction utility, expecting `cond` to eval
 	)
 	completions:push(snippet_forin_pairs)
 
+  local snippet_forin_mpairs = create_completion(
+		"", 
+		"for .. mpairs", 
+		"for ${1:key}, ${2:value} in mpairs(${3:h}) do\n\nend", 
+		InsertTextFormat.Snippet, 
+		CompletionItemKind.Snippet
+	)
+	completions:push(snippet_forin_mpairs)
+
   local snippet_forin_ipairs = create_completion(
 		"", 
 		"for .. ipairs", 
@@ -234,6 +523,15 @@ Returns `cond`. This is a branching prediction utility, expecting `cond` to eval
 		CompletionItemKind.Snippet
 	)
 	completions:push(snippet_forin_ipairs)
+
+  local snippet_forin_mipairs = create_completion(
+		"", 
+		"for .. mipairs", 
+		"for ${1:index}, ${2:value} in mipairs(${3:a}) do\n\nend", 
+		InsertTextFormat.Snippet, 
+		CompletionItemKind.Snippet
+	)
+	completions:push(snippet_forin_mipairs)
 
   local snippet_forn = create_completion(
 		"", 
