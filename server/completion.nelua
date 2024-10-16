@@ -2,7 +2,7 @@ require 'io'
 
 require 'utils.response'
 
-local CompletionItemKind = @enum {
+local CompletionItemKind = @enum{
 	Text = 1,
 	Method,
 	Function,
@@ -86,10 +86,24 @@ local function completion(request_id: integer)
 ---------------------------------------
 
 ----------- Global Variables ----------
-  local global_var_version = create_completion("", "_VERSION", "_VERSION", InsertTextFormat.PlainText, CompletionItemKind.Variable)
+  local global_var_version = create_completion(
+		[[A string containing the running Nelua version, such as `"Nelua 0.2-dev"`.]],
+		"_VERSION",
+		"_VERSION",
+		InsertTextFormat.PlainText,
+		CompletionItemKind.Variable
+	)
 	completions:push(global_var_version)
 
-  local global_var_arg = create_completion("", "arg", "arg", InsertTextFormat.PlainText, CompletionItemKind.Variable)
+  local global_var_arg = create_completion([[
+```nelua
+global arg: sequence(string, GeneralAllocator)
+```
+
+Sequence of command line arguments.
+
+The value at index `0` is usually filled with the program executable name. The values starting from index `1` up to `#arg` contains each command line argument.
+]], "arg", "arg", InsertTextFormat.PlainText, CompletionItemKind.Variable)
 	completions:push(global_var_arg)
 ---------------------------------------
 
@@ -202,7 +216,7 @@ local function completion(request_id: integer)
   local primitive_type_func = create_completion("", "function", "function($1): $2", InsertTextFormat.Snippet, CompletionItemKind.Class)
 	completions:push(primitive_type_func)
 
-  local primitive_type_span = create_completion("", "span", "span(${1:t})", InsertTextFormat.Snippet, CompletionItemKind.Class)
+  local primitive_type_span = create_completion("", "span", "span(${1:type})", InsertTextFormat.Snippet, CompletionItemKind.Class)
 	completions:push(primitive_type_span)
 
   local primitive_type_void = create_completion("", "void", "void", InsertTextFormat.PlainText, CompletionItemKind.Class)
@@ -428,7 +442,7 @@ function io.open(filename: string, mode: facultative(string)) : (filestream, str
 Opens a file, in the `mode` specified in the string mode. In case of success, it returns an open file.
 
 Equivalent to `filestream:open(filename, mode)`.
-]], "io.open(f, m?)", "io.open", InsertTextFormat.PlainText, CompletionItemKind.Function)
+]], "io.open(filename, mode?)", "io.open", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(io_open)
 
   local io_popen = create_completion([[
@@ -437,7 +451,7 @@ function io.popen(prog: string, mode: facultative(string)) : (filestream, string
 ```
 
 Starts the program `prog` in a separated process and returns a file handle that you can use to read data from this program (if `mode` is “r”, the default) or to write data to this program (if `mode` is “w”). This function is system dependent and is not available on all platforms.
-]], "io.popen(p, m?)", "io.popen", InsertTextFormat.PlainText, CompletionItemKind.Function)
+]], "io.popen(prog, mode?)", "io.popen", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(io_popen)
 
   local io_close = create_completion([[
@@ -448,7 +462,7 @@ function io.close(file: facultative(filestream)): (boolean, string, integer)
 Closes a `file`. Without a file, closes the default output file.
 
 Equivalent to `file:close()`.
-]], "io.close(p, m?)", "io.close", InsertTextFormat.PlainText, CompletionItemKind.Function)
+]], "io.close(file?)", "io.close", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(io_close)
 
   local io_flush = create_completion([[
@@ -459,8 +473,121 @@ function io.flush(file: facultative(filestream)): (boolean, string, integer)
 flushs a `file`. Without a file, flushs the default output file.
 
 Equivalent to `file:flush()`.
-]], "io.flush(p, m?)", "io.flush", InsertTextFormat.PlainText, CompletionItemKind.Function)
+]], "io.flush(file?)", "io.flush", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(io_flush)
+
+  local io_input = create_completion([[
+```nelua
+function io.input(file: overload(string,filestream,niltype)): filestream
+```
+
+When called with a file name, it opens the named `file` (in text mode), and sets its handle as the default input file. When called with a file handle, it simply sets this file handle as the default input file. When called without arguments, it returns the current default input file.
+
+In case of errors this function raises the error, instead of returning an error code.
+]], "io.input(file?)", "io.input", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_input)
+
+  local io_output = create_completion([[
+```nelua
+function io.output(file: overload(string,filestream,niltype)): filestream
+```
+
+Similar to io.input, but operates over the default output file.
+]], "io.output(file?)", "io.output", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_output)
+
+  local io_tmpfile = create_completion([[
+```nelua
+function io.tmpfile(): (filestream, string, integer)
+```
+
+In case of success, returns an open handle for a temporary file. This file is opened in update mode and it is automatically removed when the program ends.
+]], "io.tmpfile()", "io.tmpfile", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_tmpfile)
+
+  local io_read = create_completion([[
+```nelua
+function io.read(fmt: overload(integer,string,niltype)): (string, string, integer)
+```
+
+Read from default input, according to the given format.
+
+Equivalent to `io.input():read(fmt)`.
+]], "io.read(fmt?)", "io.read", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_read)
+
+  local io_write = create_completion([[
+```nelua
+function io.write(...: varargs): (boolean, string, integer)
+```
+
+Writes the value of each of its arguments to the standard output. The arguments must be strings or numbers. In case of success, this function returns `true`.
+
+Equivalent to `io.output():write(...)`.
+]], "io.write(...)", "io.write", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_write)
+
+  local io_writef = create_completion([[
+```nelua
+function io.writef(fmt: string, ...: varargs): (boolean, string, integer)
+```
+
+Writes formatted values to the standard output, according to the given format. In case of success, this function returns `true`.
+
+Equivalent to `io.output():writef(fmt, ...)`.
+]], "io.writef(fmt, ...)", "io.writef", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_writef)
+
+  local io_writef = create_completion([[
+```nelua
+function io.writef(fmt: string, ...: varargs): (boolean, string, integer)
+```
+
+Writes formatted values to the standard output, according to the given format. In case of success, this function returns `true`.
+
+Equivalent to `io.output():writef(fmt, ...)`.
+]], "io.writef(fmt, ...)", "io.writef", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_writef)
+
+  local io_printf = create_completion([[
+```nelua
+function io.printf(...: varargs): void
+```
+
+Like io.writef but also flushes the standard output.
+]], "io.printf(...)", "io.printf", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_printf)
+
+  local io_print = create_completion([[
+```nelua
+function io.print(...: varargs): void
+```
+
+Like print, but writes to io.stdout using io.write.
+]], "io.print(...)", "io.print", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_print)
+
+  local io_type = create_completion([[
+```nelua
+function io.type(obj: auto): auto
+```
+
+Checks whether `obj` is a valid file handle. Returns the string `"file"` if `obj` is an open file handle, `"closed file"` if `obj` is a closed file handle, or `nil` if `obj` is not a file handle.
+]], "io.type(obj)", "io.type", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_type)
+
+  local io_lines = create_completion([[
+```nelua
+function io.lines(filename: facultative(string), fmt: overload(integer,string,niltype))
+```
+
+Opens the given file name in read mode and returns an iterator function that works like `file:lines(...)` over the opened file.
+
+The call `io.lines()` (with no file name) is equivalent to `io.input():lines("l")`, that is, it iterates over the lines of the default input file.
+
+It currently never closes the file when the iteration finishes. In case of errors opening the file, this function raises the error, instead of returning an error code.
+]], "io.lines(filename?, fmt?)", "io.lines", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(io_lines)
 ---------------------------------------
 
 -------------- Snippets ---------------
@@ -490,7 +617,7 @@ Equivalent to `file:flush()`.
 
   local snippet_forin_generic = create_completion(
 		"", 
-		"for .. pairs", 
+		"for .. func", 
 		"for ${1:value} in ${2:func()} do\n\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
