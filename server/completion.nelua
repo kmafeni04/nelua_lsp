@@ -51,7 +51,7 @@ local function create_completion(doc: string, label: string, insert_t: string, i
   return obj
 end
 
-local function completion(request_id: integer)
+local function completion(request_id: integer, current_file: string)
 	local completions: sequence(*cJSON)
 -------------- Keywords ---------------
   local keyword_global = create_completion("", "global", "global", InsertTextFormat.PlainText, CompletionItemKind.Keyword)
@@ -234,7 +234,7 @@ The value at index `0` is usually filled with the program executable name. The v
 
 ---------- Builtin functions ----------
   local builtin_func_require = create_completion([[
-```
+```nelua
 global function require(modname: string <comptime>)
 ```
 Loads the given module `modname`.
@@ -687,6 +687,29 @@ It currently never closes the file when the iteration finishes. In case of error
 	)
 	completions:push(snippet_globalfunc)
 
+---------------------------------------
+
+------------ Generic Text -------------
+	local identifiers: sequence(string)
+	for line in current_file:gmatch("[^\n]-\n") do
+		for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
+			identifiers:push(identifier)
+		end
+	end
+
+	local seen_identifiers: hashmap(string, boolean)
+	local unique_identifiers: sequence(string)
+	for _, identifier  in ipairs(identifiers) do
+		if not seen_identifiers[identifier] then
+			unique_identifiers:push(identifier)
+			seen_identifiers[identifier] = true
+		end
+	end
+
+	for _, identifier in ipairs(unique_identifiers) do
+		local text = create_completion("", identifier, identifier, InsertTextFormat.PlainText, CompletionItemKind.Text)
+		completions:push(text)
+	end
 ---------------------------------------
 
 	local completion_response = response.completion(request_id, completions)

@@ -4,6 +4,7 @@ require 'os'
 
 require 'utils.response'
 
+local s: string
 local Severity = @enum{
 	error = 1,
 	warning,
@@ -24,19 +25,7 @@ local function create_diagnostic(ast: string, ast_match: string, severity: integ
 	local diagnostic: Diagnostic
 
 	for line in ast:gmatch("([^\r\n]+)") do
-		local extern_err_matched, extern_err_seq = line:match("(.-):(%d+):%s+error:%s+([^\r\n]+)")
-
-		if extern_err_matched then 
-			diagnostic.severe = severity
-			diagnostic.path = extern_err_seq[1]
-			diagnostic.line = tointeger(extern_err_seq[2]) - 1
-			diagnostic.s_char = 0
-			diagnostic.e_char = 1
-			diagnostic.msg = extern_err_seq[3]
-			break
-		end
 		local ast_matched, ast_seq = line:match(ast_match)
-
 		if ast_matched then
 			local ast_search_start = ast:find(ast_match)
 			local error_len_matched, error_len_seq = ast:match("[~%^]+", ast_search_start) 
@@ -50,13 +39,33 @@ local function create_diagnostic(ast: string, ast_match: string, severity: integ
 			break
 		end
 
+		local extern_err_matched, extern_err_seq = line:match("(.-):(%d+):%s+error:%s+([^\r\n]+)")
+		if extern_err_matched then 
+			for l in ast:gmatch("[^\r\n]+") do
+				local extern_ast_match: string = "(.-):(%d+):(%d+):%s*from:" 
+				local ast_matched, ast_seq = l:match(extern_ast_match)
+				if ast_matched then
+					local ast_search_start = ast:find(extern_ast_match)
+					local error_len_matched, error_len_seq = ast:match("[~%^]+", ast_search_start) 
+					diagnostic.severe = severity
+					diagnostic.path = ast_seq[1]
+					diagnostic.line = tointeger(ast_seq[2]) - 1
+					diagnostic.s_char = tointeger(ast_seq[3]) - 1
+					diagnostic.e_char = diagnostic.s_char + #error_len_seq[1]
+					diagnostic.msg = extern_err_seq[3]
+					break
+				end
+			end
+			break
+		end
+
 	end
 
 	return diagnostic
 end
 
 local function diagnostic(current_file_path: string, current_uri: string, current_path: string, tmp_name: string): boolean
-	local no_err: boolean
+	local err: boolean
 	local _, _, ast_exit_code = os.execute("nelua -a" .. current_file_path)
 	if ast_exit_code ~= 0 then
 		local ast_prog = io.popen("nelua -a " .. current_file_path .. " 2>&1")
@@ -98,9 +107,6 @@ local function diagnostic(current_file_path: string, current_uri: string, curren
 			else 
 				path = diag.path
 			end
-			logger.log(diag.path)
-			logger.log(path)
-			logger.log(current_path)
 
 			if current_path:match(path) then
 				local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
@@ -113,14 +119,14 @@ local function diagnostic(current_file_path: string, current_uri: string, curren
 				io.flush()
 			end
 		else 
-			no_err = true
+			err = false
 			local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, 0, "", true)
 			io.write(diagnostic_response)
 			io.flush()
 		end
 		ast_prog:close()
 	end
-	return no_err
+	return err
 end
 
 return diagnostic

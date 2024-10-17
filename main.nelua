@@ -16,7 +16,7 @@ local documents: hashmap(string, string)
 local current_file: string
 local current_uri: string
 local root_uri: string = io.popen("git rev-parse --show-toplevel"):read()
-local no_err: boolean
+local parse_err: boolean
 
 
 while true do
@@ -30,8 +30,8 @@ while true do
 		stdin:writef("%s", io.read(content_length))
 	end
 	
-	local request, err = json.decode(stdin:promote())
-	if err == "" then
+	local request, json_err = json.decode(stdin:promote())
+	if json_err == "" then
 		local request_method_obj = cJSON_GetObjectItem(request, "method") 
 		local request_method: string
 		if cJSON_IsString(request_method_obj) == 1 then
@@ -71,11 +71,11 @@ while true do
 			current_file = server.did_open(current_file_path)
 			documents[current_uri] = current_file
 
-			no_err = server.diagnostic(current_file_path, current_uri, current_uri, "")
+			parse_err = server.diagnostic(current_file_path, current_uri, current_uri, "")
 		end
 
 		if request_method == "textDocument/didSave" then
-			no_err = server.diagnostic(current_file_path, current_uri, current_uri, "")
+			parse_err = server.diagnostic(current_file_path, current_uri, current_uri, "")
 		end
 
 		if request_method == "textDocument/didClose" then
@@ -94,7 +94,7 @@ while true do
 			tmp_file:write(current_file)
 			local path_sub_tmp = tmp_file_name:sub(1, -#".nelua "):sub(#current_dir + #tmp_name + 2):gsub("%.", "/") .. ".nelua"
 
-			no_err = server.diagnostic(tmp_file_name, current_uri, path_sub_tmp, tmp_name)
+			parse_err = server.diagnostic(tmp_file_name, current_uri, path_sub_tmp, tmp_name)
 
 			os.remove(tmp_file_name)
 		end
@@ -108,7 +108,7 @@ while true do
 				current_file,
 				current_line,
 				current_char,
-				no_err
+				parse_err
 			)
 		end
 
@@ -122,12 +122,12 @@ while true do
 				current_file,
 				current_line,
 				current_char,
-				no_err
+				parse_err
 			)
 		end
 
 		if request_method == "textDocument/completion" then
-			server.completion(request_id)
+			server.completion(request_id, current_file)
 		end
 	
 		if request_method == "shutdown" then

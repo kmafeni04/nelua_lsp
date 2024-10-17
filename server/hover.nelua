@@ -12,9 +12,9 @@ local function hover(
 	current_file: string,
 	current_line: integer,
 	current_char: integer,
-	no_err: boolean
+	parse_err: boolean
 )
-	if not no_err then
+	if parse_err then
 		goto type_found
 	end
 
@@ -35,21 +35,18 @@ local function hover(
         local identifier_end = identifier_start + #identifier_seq[1] - 1  
 
 				if current_char >= identifier_start and current_char <= identifier_end then
-					local _, _, ast_exit_code = os.execute("nelua --print-analyzed-ast " .. current_file_path)
-					if ast_exit_code == 0 then
-						local ast_prog <close> = io.popen("nelua --print-analyzed-ast " .. current_file_path)
-						local ast_file = ast_prog:read("a")
-						local ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_]' .. identifier .. '%f[^%w_]"')
+					local ast_prog <close> = io.popen("nelua --print-analyzed-ast " .. current_file_path)
+					local ast_file = ast_prog:read("a")
+					local ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_]' .. identifier .. '%f[^%w_]"')
 
-						if ast_search_start == 0 then
-							ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_][%w_]+[%.:]' .. identifier .. '%f[^%w_]"')
-						end
-
-						local ast_type_start = ast_file:find('type = "', ast_search_start)
-						local ast_type_matched, ast_type_seq = ast_file:match('type = "([^"\r\n]+)",', ast_type_start)
-						content = identifier .. "\n\n**Type**:\n```nelua\n" .. ast_type_seq[1] .. "\n```"
-						goto type_found
+					if ast_search_start == 0 then
+						ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_][%w_]+[%.:]' .. identifier .. '%f[^%w_]"')
 					end
+
+					local ast_type_start = ast_file:find('type = "', ast_search_start)
+					local ast_type_matched, ast_type_seq = ast_file:match('type = "([^"\r\n]+)",', ast_type_start)
+					content = identifier .. "\n\n**Type**:\n```nelua\n" .. ast_type_seq[1] .. "\n```"
+					goto type_found
 				end
 			end
 		end

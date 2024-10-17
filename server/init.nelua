@@ -51,7 +51,7 @@ function server.hover(
 	current_file: string,
 	current_line: integer,
 	current_char: integer,
-	no_err: boolean
+	parse_err: boolean
 )
 	hover(
 		documents,
@@ -61,7 +61,7 @@ function server.hover(
 		current_file,
 		current_line,
 		current_char,
-		no_err
+		parse_err
 	)
 end
 
@@ -74,7 +74,7 @@ function server.go_to_definition(
 	current_file: string,
 	current_line: integer,
 	current_char: integer,
-	no_err: boolean
+	parse_err: boolean
 )
 	go_to_definition(
 		root_uri,
@@ -85,12 +85,12 @@ function server.go_to_definition(
 		current_file,
 		current_line,
 		current_char,
-		no_err
+		parse_err
 	)
 end
 
-function server.completion(request_id: integer)
-	completion(request_id)
+function server.completion(request_id: integer, current_file: string)
+	completion(request_id, current_file)
 end
 
 function server.shutdown()
