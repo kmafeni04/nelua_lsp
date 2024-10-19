@@ -18,10 +18,8 @@ local current_uri: string
 local root_uri: string = io.popen("git rev-parse --show-toplevel"):read()
 local parse_err: boolean
 
-
 while true do
 	local header = io.read("l")
-	local std: integer
 
 	local header_match, header_seq = header:match(":%s(%d+)")
 	if header_match then
@@ -71,11 +69,11 @@ while true do
 			current_file = server.did_open(current_file_path)
 			documents[current_uri] = current_file
 
-			parse_err = server.diagnostic(current_file_path, current_uri, current_uri, "")
+			parse_err = server.diagnostic(current_file, current_file_path, current_uri, root_uri)
 		end
 
 		if request_method == "textDocument/didSave" then
-			parse_err = server.diagnostic(current_file_path, current_uri, current_uri, "")
+			parse_err = server.diagnostic(current_file, current_file_path, current_uri, root_uri)
 		end
 
 		if request_method == "textDocument/didClose" then
@@ -85,18 +83,16 @@ while true do
 		if request_method == "textDocument/didChange" then
 			current_file = server.did_change(documents, request_params, current_uri)
 			documents[current_uri] = current_file
-			local tmp_name = os.tmpname():gsub("/", "_")
-			local _, current_file_name_seq = current_file_path:match("[^/]+.nelua")
-			local current_dir = current_file_path:sub(1, #current_file_path - #current_file_name_seq[1])
+			-- local tmp_name = os.tmpname():gsub("/", "_")
+			-- local _, current_file_name_seq = current_file_path:match("[^/]+.nelua")
+			-- local current_dir = current_file_path:sub(1, #current_file_path - #current_file_name_seq[1])
 			
-			local tmp_file_name = current_dir .. tmp_name .. "." .. current_file_path:gsub("/", ".")
-			local tmp_file <close> = io.open(tmp_file_name, "w")
-			tmp_file:write(current_file)
-			local path_sub_tmp = tmp_file_name:sub(1, -#".nelua "):sub(#current_dir + #tmp_name + 2):gsub("%.", "/") .. ".nelua"
+			-- local tmp_file_name = current_dir .. tmp_name .. "." .. current_file_path:gsub("/", ".")
+			-- local tmp_file <close> = io.open(tmp_file_name, "w")
+			-- tmp_file:write(current_file)
+			-- local path_sub_tmp = tmp_file_name:sub(1, -#".nelua "):sub(#current_dir + #tmp_name + 2):gsub("%.", "/") .. ".nelua"
 
-			parse_err = server.diagnostic(tmp_file_name, current_uri, path_sub_tmp, tmp_name)
-
-			os.remove(tmp_file_name)
+			parse_err = server.diagnostic(current_file, current_file_path, current_uri, root_uri)
 		end
 
 		if request_method == "textDocument/hover" then

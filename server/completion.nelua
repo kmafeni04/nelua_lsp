@@ -83,6 +83,9 @@ local function completion(request_id: integer, current_file: string)
 
   local keyword_goto = create_completion("", "goto", "goto", InsertTextFormat.PlainText, CompletionItemKind.Keyword)
 	completions:push(keyword_goto)
+
+  local keyword_return = create_completion("", "return", "return", InsertTextFormat.PlainText, CompletionItemKind.Keyword)
+	completions:push(keyword_return)
 ---------------------------------------
 
 ----------- Global Variables ----------

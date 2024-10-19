@@ -50,7 +50,7 @@ local function go_to_definition(
 				end
 
 		    if line:match("require") then
-					local path_matched, path_seq = part:match([[require%s*[%(]?%s*['"]([%w_%.]+)['"]%s*[%)]?]])
+					local path_matched, path_seq = part:match("require%s*[%(]?%s*['\"]([%w_%.]+)['\"]%s*[%)]?")
 					local path_start = line:find(path_seq[1], start_idx, true) - 1
 	        local path_end = path_start + #path_seq[1] - 1  
 

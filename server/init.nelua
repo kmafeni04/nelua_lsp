@@ -19,13 +19,8 @@ function server.did_open(current_file_path: string): string
 	return did_open(current_file_path)
 end
 
-function server.diagnostic(
-	current_file_path: string,
-	current_uri: string,
-	current_path: string,
-	tmp_name: string
-): boolean
-	return diagnostic(current_file_path, current_uri, current_path, tmp_name)
+function server.diagnostic(current_file: string, current_file_path: string, current_uri: string, root_uri: string): boolean
+	return diagnostic(current_file, current_file_path, current_uri, root_uri)
 end
 
 function server.did_change(

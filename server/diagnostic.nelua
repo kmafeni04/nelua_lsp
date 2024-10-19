@@ -1,10 +1,8 @@
-require 'string'
 require 'io'
 require 'os'
 
 require 'utils.response'
 
-local s: string
 local Severity = @enum{
 	error = 1,
 	warning,
@@ -64,68 +62,36 @@ local function create_diagnostic(ast: string, ast_match: string, severity: integ
 	return diagnostic
 end
 
-local function diagnostic(current_file_path: string, current_uri: string, current_path: string, tmp_name: string): boolean
-	local err: boolean
-	local _, _, ast_exit_code = os.execute("nelua -a" .. current_file_path)
-	if ast_exit_code ~= 0 then
-		local ast_prog = io.popen("nelua -a " .. current_file_path .. " 2>&1")
-		local ast = ast_prog:read("a")
-		if ast:match(":%s+error:") then
-			local diag: Diagnostic = create_diagnostic(ast, "(.-):(%d+):(%d+):%s+error:%s+([^\r\n]+)", Severity.error)
-			local path: string
-			if tmp_name ~= "" then
-				local diag_path_sub_tmp: string
-				if diag.path:match("nelua_") then
-					path = diag.path:sub(1, -#".nelua "):sub(#tmp_name + 2):gsub("%.", "/") .. ".nelua"
-				else
-					path = diag.path 
-				end
-			else 
-				path = diag.path
-			end
+local function diagnostic(current_file: string, current_file_path: string, current_uri: string, root_uri: string): boolean
+	local err: boolean = true
 
-			if current_path:match(path) then
-				local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
-				io.write(diagnostic_response)
-				io.flush()
-			else
-				local extern_msg = diag.path .. ":" .. diag.line + 1 .. ":" .. diag.s_char + 1 .. ": " .. diag.msg
-				local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, diag.severe, extern_msg)
-				io.write(diagnostic_response)
-				io.flush()
-			end
-		elseif ast:match(":%s+syntax error:") then
-			local diag: Diagnostic = create_diagnostic(ast, "(.-):(%d+):(%d+):%s+syntax error:%s+([^\r\n]+)", Severity.error)
-			local path: string
-			if tmp_name ~= "" then
-				local diag_path_sub_tmp: string
-				if diag.path:match("nelua_") then
-					path = diag.path:sub(1, -#".nelua "):sub(#tmp_name + 2):gsub("%.", "/") .. ".nelua"
-				else
-					path = diag.path 
-				end
-			else 
-				path = diag.path
-			end
+	local tmp_name = os.tmpname():gsub("/", "_")
+	local _, current_file_name_seq = current_file_path:match("[^/]+%.nelua")
+	local current_dir = current_file_path:sub(1, #current_file_path - #current_file_name_seq[1])
+	local tmp_file_name = current_dir .. tmp_name .. "." .. current_file_path:gsub("/", ".")
+	local tmp_file = io.open(tmp_file_name, "w")
+	tmp_file:write(current_file)
+	tmp_file:close()
 
-			if current_path:match(path) then
-				local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
-				io.write(diagnostic_response)
-				io.flush()
-			else
-				local extern_msg = diag.path .. ":" .. diag.line + 1 .. ":" .. diag.s_char + 1 .. ": " .. diag.msg
-				local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, diag.severe, extern_msg)
-				io.write(diagnostic_response)
-				io.flush()
-			end
-		else 
-			err = false
-			local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, 0, "", true)
-			io.write(diagnostic_response)
-			io.flush()
-		end
-		ast_prog:close()
+	local analysis = io.popen("nelua -a " .. tmp_file_name .. " 2>&1"):read("a")
+	if analysis:match(":%s+error:") then
+		local diag: Diagnostic = create_diagnostic(analysis, "(.-):(%d+):(%d+):%s+error:%s+([^\r\n]+)", Severity.error)
+		local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
+		io.write(diagnostic_response)
+		io.flush()
+	elseif analysis:match(":%s+syntax error:") then
+		local diag: Diagnostic = create_diagnostic(analysis, "(.-):(%d+):(%d+):%s+syntax error:%s+([^\r\n]+)", Severity.error)
+		local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
+		io.write(diagnostic_response)
+		io.flush()
+	else 
+		err = false
+		local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, 0, "", true)
+		io.write(diagnostic_response)
+		io.flush()
 	end
+
+	os.remove(tmp_file_name)
 	return err
 end
 

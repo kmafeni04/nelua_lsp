@@ -84,7 +84,7 @@ function response.diagnostic(
   severity: integer,
   err: string,
   clear: facultative(boolean)
-)
+): string
   local diagnostice_response = cJSON_CreateObject()
   cJSON_AddItemToObject(diagnostice_response, "jsonrpc", cJSON_CreateString("2.0"))
 
@@ -92,7 +92,6 @@ function response.diagnostic(
   cJSON_AddItemToObject(diagnostice_response, "method", method)
 
   local params = cJSON_CreateObject()
-
 
   local uri = cJSON_CreateString(current_uri)
   cJSON_AddItemToObject(params, "uri", uri)
