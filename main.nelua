@@ -21,8 +21,8 @@ local parse_err: boolean
 while true do
 	local header = io.read("l")
 
-	local header_match, header_seq = header:match(":%s(%d+)")
-	if header_match then
+	local header_matched, header_seq = header:match(":%s(%d+)")
+	if header_matched then
 		local content_length = tointeger(header_seq[1])
 		io.read("l")
 		stdin:writef("%s", io.read(content_length))

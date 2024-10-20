@@ -7,7 +7,7 @@ global logger = @record{}
 		local time = os.date("%X", os.time())
 		local logged_file = #[debug.getinfo(1).source]#
 		local line = #[debug.getinfo(1).currentline]#
-		assert(log_file):write(("[lua_lsp] " .. date .. " " .. time .. "  " .. logged_file .. ":" .. line .. ":" .. " Started\n"))
+		assert(log_file):write(("[nelua_lsp] " .. date .. " " .. time .. "  " .. logged_file .. ":" .. line .. ":" .. " Started\n"))
 		assert(log_file):close()
 	end
 
@@ -17,7 +17,7 @@ global logger = @record{}
 		local time = os.date("%X", os.time())
 		local logged_file = #[debug.getinfo(1).source]#
 		local line = #[debug.getinfo(1).currentline]#
-		assert(log_file):write(("[lua_lsp] " .. date .. " " .. time .. "  " .. logged_file .. ":" .. line .. ": " .. msg .. "\n"))
+		assert(log_file):write(("[nelua_lsp] " .. date .. " " .. time .. "  " .. logged_file .. ":" .. line .. ": " .. msg .. "\n"))
 		assert(log_file):close()
 	end
 ## else

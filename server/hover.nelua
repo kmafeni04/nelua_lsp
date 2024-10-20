@@ -3,6 +3,7 @@ require 'os'
 
 require 'utils.logger'
 require 'utils.response'
+local analyze_ast = require 'utils.analyze_ast'
 
 local function hover(
 	documents: hashmap(string, string),
@@ -14,6 +15,7 @@ local function hover(
 	current_char: integer,
 	parse_err: boolean
 )
+
 	if parse_err then
 		goto type_found
 	end
@@ -35,17 +37,10 @@ local function hover(
         local identifier_end = identifier_start + #identifier_seq[1] - 1  
 
 				if current_char >= identifier_start and current_char <= identifier_end then
-					local ast_prog <close> = io.popen("nelua --print-analyzed-ast " .. current_file_path)
-					local ast_file = ast_prog:read("a")
-					local ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_]' .. identifier .. '%f[^%w_]"')
-
-					if ast_search_start == 0 then
-						ast_search_start = ast_file:find('%f[%w_]name%f[^%w_] = "%f[%w_][%w_]+[%.:]' .. identifier .. '%f[^%w_]"')
+					local block = analyze_ast(current_file, current_file_path, identifier)
+					if block.attr["type"] ~= "" then
+						content = identifier .. "\n\n**Type**:\n```nelua\n" .. block.attr["type"] .. "\n```"
 					end
-
-					local ast_type_start = ast_file:find('type = "', ast_search_start)
-					local ast_type_matched, ast_type_seq = ast_file:match('type = "([^"\r\n]+)",', ast_type_start)
-					content = identifier .. "\n\n**Type**:\n```nelua\n" .. ast_type_seq[1] .. "\n```"
 					goto type_found
 				end
 			end

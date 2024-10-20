@@ -1,0 +1,98 @@
+require 'os'
+require 'io'
+
+require '.logger'
+
+local create_tmp_file = require '.create_tmp_file'
+
+local function trim(s: string): string
+  local _, s_seq = s:match("^%s*(.-)%s*$")
+  return s_seq[1]
+end
+
+local Block = @record{
+  name: string,
+  content: string,
+  attr: hashmap(string, string),
+  sub_blocks: sequence(Block)
+}
+
+local function parse_ast(ast: string)
+  local blocks: sequence(Block)
+
+  local ast_reg = "(%w+)%s*(%b{})"
+  for _, parse_seq in ast:gmatch(ast_reg) do
+    local block: Block
+
+    block.name = parse_seq[0]
+    block.content = parse_seq[1]
+
+    local block_attr_matched, block_attr_seq = block.content:match("attr%s*=%s*(%b{})")
+    if block_attr_matched then
+      for _, attr_seq in block_attr_seq[1]:gmatch("(%w+)%s*=%s*([^\r\n]+)") do
+        block.attr[attr_seq[0]] = trim(attr_seq[1]:gsub('"',""):gsub(",%s*$", ""))
+      end
+    end
+
+    local sub_blocks = parse_ast(block.content)
+    if #sub_blocks > 0 then
+      block.sub_blocks = sub_blocks
+    end
+
+    blocks:push(block)
+  end
+
+  return blocks
+end
+
+local function search_ast(blocks: sequence(Block), identifier: string): (Block, boolean)
+  local empty_block: Block
+  for _, block  in ipairs(blocks) do
+    if block.name == "Id" then
+      if block.attr["name"] == identifier then
+        return block, false
+      end
+    elseif block.name == "IdDecl" then
+      if block.attr["name"] == identifier then
+        return block, false
+      end
+    elseif block.name == "DotIndex" then
+      if block.attr["name"]:match("%." .. identifier) then
+        return block, false
+      elseif block.attr["dotfieldname"] == identifier then
+        return block, false
+      end
+    elseif block.name == "CallMethod" then
+      if block.attr["calleesym"]:match("%." .. identifier) then
+        block.attr["type"] = block.attr["calleetype"]
+        return block, false
+      end
+    end
+    if #block.sub_blocks > 0 then
+      local sub_block, err = search_ast(block.sub_blocks, identifier)
+      if err == false then
+        return sub_block, false
+      end
+    end 
+  end
+  return empty_block, true
+end
+
+local function analyze_ast(current_file: string, current_file_path: string, identifier: string): Block
+  local b: Block
+
+	local tmp_file_name = create_tmp_file(current_file_path, current_file)
+
+  local ast = io.popen("nelua --print-analyzed-ast " .. tmp_file_name):read("a")
+  logger.log(ast)
+  os.remove(tmp_file_name)
+  local blocks = parse_ast(ast)
+  local block, err = search_ast(blocks, identifier)
+  if err == false then
+    b = block
+  end
+  return b
+
+end
+
+return analyze_ast

@@ -3,6 +3,8 @@ require 'os'
 
 require 'utils.response'
 
+local create_tmp_file = require 'utils.create_tmp_file'
+
 local Severity = @enum{
 	error = 1,
 	warning,
@@ -65,13 +67,7 @@ end
 local function diagnostic(current_file: string, current_file_path: string, current_uri: string, root_uri: string): boolean
 	local err: boolean = true
 
-	local tmp_name = os.tmpname():gsub("/", "_")
-	local _, current_file_name_seq = current_file_path:match("[^/]+%.nelua")
-	local current_dir = current_file_path:sub(1, #current_file_path - #current_file_name_seq[1])
-	local tmp_file_name = current_dir .. tmp_name .. "." .. current_file_path:gsub("/", ".")
-	local tmp_file = io.open(tmp_file_name, "w")
-	tmp_file:write(current_file)
-	tmp_file:close()
+	local tmp_file_name = create_tmp_file(current_file_path, current_file)
 
 	local analysis = io.popen("nelua -a " .. tmp_file_name .. " 2>&1"):read("a")
 	if analysis:match(":%s+error:") then
