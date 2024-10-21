@@ -138,7 +138,7 @@ function response.hover(request_id: number, content: string): string
   return response
 end
 
-function response.definition(uris: sequence(string), s_lines: sequence(integer), s_chars: sequence(integer),e_lines: sequence(integer), e_chars: sequence(integer), request_id: integer): string
+function response.definition(request_id: integer, uris: sequence(string), s_lines: sequence(integer), s_chars: sequence(integer),e_lines: sequence(integer), e_chars: sequence(integer)): string
   local definition_response = cJSON_CreateObject()
 
   base_message(definition_response, request_id)

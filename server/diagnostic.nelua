@@ -3,8 +3,6 @@ require 'os'
 
 require 'utils.response'
 
-local create_tmp_file = require 'utils.create_tmp_file'
-
 local Severity = @enum{
 	error = 1,
 	warning,
@@ -21,36 +19,36 @@ local Diagnostic = @record{
 	msg: string
 }
 
-local function create_diagnostic(ast: string, ast_match: string, severity: integer): Diagnostic
+local function create_diagnostic(analysis: string, analysis_match: string, severity: integer): Diagnostic
 	local diagnostic: Diagnostic
 
-	for line in ast:gmatch("([^\r\n]+)") do
-		local ast_matched, ast_seq = line:match(ast_match)
-		if ast_matched then
-			local ast_search_start = ast:find(ast_match)
-			local error_len_matched, error_len_seq = ast:match("[~%^]+", ast_search_start) 
+	for line in analysis:gmatch("([^\r\n]+)") do
+		local analysis_matched, analysis_seq = line:match(analysis_match)
+		if analysis_matched then
+			local analysis_search_start = analysis:find(analysis_match)
+			local error_len_matched, error_len_seq = analysis:match("[~%^]+", analysis_search_start) 
 
 			diagnostic.severe = severity
-			diagnostic.path = ast_seq[1]
-			diagnostic.line = tointeger(ast_seq[2]) - 1
-			diagnostic.s_char = tointeger(ast_seq[3]) - 1
+			diagnostic.path = analysis_seq[1]
+			diagnostic.line = tointeger(analysis_seq[2]) - 1
+			diagnostic.s_char = tointeger(analysis_seq[3]) - 1
 			diagnostic.e_char = diagnostic.s_char + #error_len_seq[1]
-			diagnostic.msg = ast_seq[4]
+			diagnostic.msg = analysis_seq[4]
 			break
 		end
 
 		local extern_err_matched, extern_err_seq = line:match("(.-):(%d+):%s+error:%s+([^\r\n]+)")
 		if extern_err_matched then 
-			for l in ast:gmatch("[^\r\n]+") do
-				local extern_ast_match: string = "(.-):(%d+):(%d+):%s*from:" 
-				local ast_matched, ast_seq = l:match(extern_ast_match)
-				if ast_matched then
-					local ast_search_start = ast:find(extern_ast_match)
-					local error_len_matched, error_len_seq = ast:match("[~%^]+", ast_search_start) 
+			for l in analysis:gmatch("[^\r\n]+") do
+				local extern_analysis_match: string = "(.-):(%d+):(%d+):%s*from:" 
+				local analysis_matched, analysis_seq = l:match(extern_analysis_match)
+				if analysis_matched then
+					local analysis_search_start = analysis:find(extern_analysis_match)
+					local error_len_matched, error_len_seq = analysis:match("[~%^]+", analysis_search_start) 
 					diagnostic.severe = severity
-					diagnostic.path = ast_seq[1]
-					diagnostic.line = tointeger(ast_seq[2]) - 1
-					diagnostic.s_char = tointeger(ast_seq[3]) - 1
+					diagnostic.path = analysis_seq[1]
+					diagnostic.line = tointeger(analysis_seq[2]) - 1
+					diagnostic.s_char = tointeger(analysis_seq[3]) - 1
 					diagnostic.e_char = diagnostic.s_char + #error_len_seq[1]
 					diagnostic.msg = extern_err_seq[3]
 					break
@@ -67,27 +65,35 @@ end
 local function diagnostic(current_file: string, current_file_path: string, current_uri: string, root_uri: string): boolean
 	local err: boolean = true
 
-	local tmp_file_name = create_tmp_file(current_file_path, current_file)
+	local tmp_name = os.tmpname()
+	local tmp_file = io.open(tmp_name, "w")
+	tmp_file:write(current_file)
+	local analysis = io.popen("nelua -a " .. tmp_name .. " 2>&1"):read("a")
+	os.remove(tmp_name)
 
-	local analysis = io.popen("nelua -a " .. tmp_file_name .. " 2>&1"):read("a")
-	if analysis:match(":%s+error:") then
+	if analysis:match(":%s*error:") then
 		local diag: Diagnostic = create_diagnostic(analysis, "(.-):(%d+):(%d+):%s+error:%s+([^\r\n]+)", Severity.error)
-		local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
-		io.write(diagnostic_response)
-		io.flush()
-	elseif analysis:match(":%s+syntax error:") then
+		if not diag.msg:match("module.*not found") then
+			local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
+			io.write(diagnostic_response)
+			io.flush()
+
+			return err
+		end
+	elseif analysis:match(":%s*syntax error:") then
 		local diag: Diagnostic = create_diagnostic(analysis, "(.-):(%d+):(%d+):%s+syntax error:%s+([^\r\n]+)", Severity.error)
 		local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
 		io.write(diagnostic_response)
 		io.flush()
-	else 
-		err = false
-		local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, 0, "", true)
-		io.write(diagnostic_response)
-		io.flush()
+
+		return err
 	end
 
-	os.remove(tmp_file_name)
+	err = false
+	local diagnostic_response = response.diagnostic(current_uri, 0, 0, 0, 0, "", true)
+	io.write(diagnostic_response)
+	io.flush()
+
 	return err
 end
 
