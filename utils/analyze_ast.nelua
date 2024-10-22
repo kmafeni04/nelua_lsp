@@ -3,6 +3,8 @@ require 'io'
 
 require '.logger'
 
+local create_tmp_file = require '.create_tmp_file'
+
 local function trim(s: string): string
   local _, s_seq = s:match("^%s*(.-)%s*$")
   return s_seq[1]
@@ -76,25 +78,12 @@ local function search_ast(blocks: sequence(Block), identifier: string): (Block, 
   return empty_block, true
 end
 
-local function create_tmp_file(current_file_path: string, current_file: string): string
-	local tmp_name = os.tmpname():gsub("/", "_")
-	local _, current_file_name_seq = current_file_path:match("[^/]+%.nelua")
-	local current_dir = current_file_path:sub(1, #current_file_path - #current_file_name_seq[1])
-	local tmp_file_name = current_dir .. tmp_name .. "." .. current_file_path:gsub("/", ".")
-	local tmp_file = io.open(tmp_file_name, "w")
-	tmp_file:write(current_file)
-	tmp_file:close()
-
-  return tmp_file_name
-end
-
 local function analyze_ast(current_file: string, current_file_path: string, identifier: string): Block
   local b: Block
 
 	local tmp_file_name = create_tmp_file(current_file_path, current_file)
 
   local ast = io.popen("nelua --print-analyzed-ast " .. tmp_file_name):read("a")
-  logger.log(ast)
   os.remove(tmp_file_name)
   local blocks = parse_ast(ast)
   local block, err = search_ast(blocks, identifier)

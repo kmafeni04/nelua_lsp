@@ -3,6 +3,10 @@
 This is an early implementation of writing an LSP server the for [nelua](https://nelua.io) programming language
 It is heavily reliant on git to work but I aim to improve on this as much as I can
 
+## Disclaimer
+
+I honestly do not properly know how to parse files so anything that be read multiline will most likely not work
+
 ## Goals
 
 - [x] Go to Definition (partial)

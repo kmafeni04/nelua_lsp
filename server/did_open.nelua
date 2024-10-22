@@ -1,3 +1,5 @@
+require 'io'
+
 require 'utils.logger'
 require 'utils.response'
 

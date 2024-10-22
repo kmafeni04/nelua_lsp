@@ -3,6 +3,8 @@ require 'os'
 
 require 'utils.response'
 
+local create_tmp_file = require 'utils.create_tmp_file'
+
 local Severity = @enum{
 	error = 1,
 	warning,
@@ -65,21 +67,18 @@ end
 local function diagnostic(current_file: string, current_file_path: string, current_uri: string, root_uri: string): boolean
 	local err: boolean = true
 
-	local tmp_name = os.tmpname()
-	local tmp_file = io.open(tmp_name, "w")
-	tmp_file:write(current_file)
-	local analysis = io.popen("nelua -a " .. tmp_name .. " 2>&1"):read("a")
-	os.remove(tmp_name)
+
+	local tmp_file_name = create_tmp_file(current_file_path, current_file)
+	local analysis = io.popen("nelua -a " .. tmp_file_name .. " 2>&1"):read("a")
+	os.remove(tmp_file_name)
 
 	if analysis:match(":%s*error:") then
 		local diag: Diagnostic = create_diagnostic(analysis, "(.-):(%d+):(%d+):%s+error:%s+([^\r\n]+)", Severity.error)
-		if not diag.msg:match("module.*not found") then
-			local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
-			io.write(diagnostic_response)
-			io.flush()
+		local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)
+		io.write(diagnostic_response)
+		io.flush()
 
-			return err
-		end
+		return err
 	elseif analysis:match(":%s*syntax error:") then
 		local diag: Diagnostic = create_diagnostic(analysis, "(.-):(%d+):(%d+):%s+syntax error:%s+([^\r\n]+)", Severity.error)
 		local diagnostic_response = response.diagnostic(current_uri, diag.line, diag.s_char, diag.e_char, diag.severe, diag.msg)

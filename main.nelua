@@ -15,7 +15,7 @@ local stdin: stringbuilder
 local documents: hashmap(string, string)
 local current_file: string
 local current_uri: string
-local root_uri: string = io.popen("git rev-parse --show-toplevel"):read()
+local root_uri: string = io.popen("git rev-parse --show-toplevel"):read("l")
 local parse_err: boolean
 
 while true do

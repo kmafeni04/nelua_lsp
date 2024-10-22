@@ -1,1 +1,1 @@
-local test, lol = require('.test'), require('lol.hello')
+return global x = 10

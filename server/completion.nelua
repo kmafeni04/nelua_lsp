@@ -195,14 +195,14 @@ The value at index `0` is usually filled with the program executable name. The v
   local primitive_type_string = create_completion("", "string", "string", InsertTextFormat.PlainText, CompletionItemKind.Class)
 	completions:push(primitive_type_string)
 
-  local primitive_type_stringbuilderT = create_completion(
+  local primitive_type_stringbuilder = create_completion(
 		"",
-		"stringbuilderT",
-		"stringbuilderT",
+		"stringbuilder",
+		"stringbuilder",
 		InsertTextFormat.PlainText,
 		CompletionItemKind.Class
 	)
-	completions:push(primitive_type_stringbuilderT)
+	completions:push(primitive_type_stringbuilder)
 
   local primitive_type_record = create_completion("", "record", "record", InsertTextFormat.PlainText, CompletionItemKind.Class)
 	completions:push(primitive_type_record)
@@ -386,7 +386,7 @@ for k,v in pairs(a) do body end
 will iterate over all the key–value pairs of `a`. Where `k` is a key determining the location of the element, and `v` its respective value.
 
 The container `a` must either have the metamethod `__pairs` or be a contiguous. Should work on any container, such as `array`, `span`, `vector`, `sequence` or `hashmap`.
-]], "pairs(a, k)", "pairs", InsertTextFormat.PlainText, CompletionItemKind.Function)
+]], "pairs(a)", "pairs", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(builtin_func_pairs)
 
   local builtin_func_mpairs = create_completion([[
@@ -395,7 +395,7 @@ global function mpairs(a: container_reference_concept): (auto, auto, auto)
 ```
 
 Like `pairs` but yields reference to elements values so that you can modify them in-place.
-]], "mpairs(a, k)", "mpairs", InsertTextFormat.PlainText, CompletionItemKind.Function)
+]], "mpairs(a)", "mpairs", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(builtin_func_mpairs)
 
   local builtin_func_select = create_completion([[
@@ -630,7 +630,7 @@ It currently never closes the file when the iteration finishes. In case of error
   local snippet_forin_pairs = create_completion(
 		"", 
 		"for .. pairs", 
-		"for ${1:key}, ${2:value} in pairs(${3:h}) do\n\nend", 
+		"for ${1:key}, ${2:value} in pairs(${3:a}) do\n\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -639,7 +639,7 @@ It currently never closes the file when the iteration finishes. In case of error
   local snippet_forin_mpairs = create_completion(
 		"", 
 		"for .. mpairs", 
-		"for ${1:key}, ${2:value} in mpairs(${3:h}) do\n\nend", 
+		"for ${1:key}, ${2:value} in mpairs(${3:a}) do\n\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
