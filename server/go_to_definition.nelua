@@ -156,6 +156,7 @@ local function go_to_definition(
           end 
 				end
 				if # #|name .. "_positions"|# > 0 then
+					logger.log(#[name]#)
 					local s_char = #|name .. "_positions"|#[closest_line]
 					local e_char = #|name .. "_positions"|#[closest_line] + #identifier
 					## push_definition(current_uri, closest_line , s_char, closest_line, e_char)
@@ -183,6 +184,7 @@ local function go_to_definition(
 			for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
 				if not keywords[identifier] and identifier == word then
 ------- Local and Global Variables ------
+					-- TODO: Doesn't match correctly
 					local local_repeat = true
 					local local_search = "local%s*[^=]+" .. #[just_selection]#(identifier)
 					## closest_goto("local", local_search)
@@ -238,9 +240,9 @@ local function go_to_definition(
 					## closest_goto("goto", goto_search, true)
 -----------------------------------------
 ---------------- Params -----------------
-					-- Isn't working with record functions
-					local param_search = "function%.-([%w_]+%.:)?[%w_]+%s*%(.-" .. #[just_selection]#(identifier) .. "%s*:"
-					## closest_goto("param", param_search, true)
+					-- TODO: Figure out proper regex for params
+					-- local param_search = "function%.-([%w_]+%.:)?[%w_]+%s*%(.-" .. #[just_selection]#(identifier) .. "%s*:"
+					-- ## closest_goto("param", param_search, true)
 -----------------------------------------
 				end
 			end
