@@ -1,0 +1,23 @@
+require 'hashmap'
+
+local keywords: hashmap(string, boolean)
+keywords["local"] = true
+keywords["global"] = true
+keywords["function"] = true
+keywords["require"] = true
+keywords["nil"] = true
+keywords["true"] = true
+keywords["false"] = true
+keywords["for"] = true
+keywords["while"] = true
+keywords["do"] = true
+keywords["end"] = true
+keywords["in"] = true
+keywords["then"] = true
+keywords["not"] = true
+keywords["defer"] = true
+keywords["break"] = true
+keywords["fallthrough"] = true
+keywords["switch"] = true
+
+return keywords

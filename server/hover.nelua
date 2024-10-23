@@ -4,6 +4,7 @@ require 'os'
 require 'utils.logger'
 require 'utils.response'
 local analyze_ast = require 'utils.analyze_ast'
+local keywords = require 'utils.keywords'
 
 local function hover(
 	documents: hashmap(string, string),
@@ -31,17 +32,19 @@ local function hover(
 		if line_num == current_line then
 			local identifier_find_start: integer
 			for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
-				local identifier_matched, identifier_seq = line:match("%f[%w_]" .. identifier .. "%f[^%w_]")
-				local identifier_start = line:find("%f[%w_]" .. identifier_seq[1] .. "%f[^%w_]", identifier_find_start) - 1
-				identifier_find_start = identifier_start + #identifier
-        local identifier_end = identifier_start + #identifier_seq[1] - 1  
+				if not keywords[identifier] then
+					local identifier_matched, identifier_seq = line:match("%f[%w_]" .. identifier .. "%f[^%w_]")
+					local identifier_start = line:find("%f[%w_]" .. identifier_seq[1] .. "%f[^%w_]", identifier_find_start) - 1
+					identifier_find_start = identifier_start + #identifier
+	        local identifier_end = identifier_start + #identifier_seq[1] - 1  
 
-				if current_char >= identifier_start and current_char <= identifier_end then
-					local block = analyze_ast(current_file, current_file_path, identifier)
-					if block.attr["type"] ~= "" then
-						content = identifier .. "\n\n**Type**:\n```nelua\n" .. block.attr["type"] .. "\n```"
+					if current_char >= identifier_start and current_char <= identifier_end then
+						local block = analyze_ast(current_file, current_file_path, identifier)
+						if block.attr["type"] ~= "" then
+							content = identifier .. "\n\n**Type**:\n```nelua\n" .. block.attr["type"] .. "\n```"
+						end
+						goto type_found
 					end
-					goto type_found
 				end
 			end
 		end

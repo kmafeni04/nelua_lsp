@@ -4,6 +4,8 @@ require 'math'
 require 'utils.logger'
 require 'utils.response'
 
+local keywords = require 'utils.keywords'
+
 local function go_to_definition(
 	root_uri: string,
 	request_params: *cJSON,
@@ -31,26 +33,6 @@ local function go_to_definition(
 	local go_to_e_lines: sequence(integer)
 	local go_to_e_chars: sequence(integer)
 	local file_scheme: string = "file://" 
-
-	local keywords: hashmap(string, boolean)
-	keywords["local"] = true
-	keywords["global"] = true
-	keywords["function"] = true
-	keywords["require"] = true
-	keywords["nil"] = true
-	keywords["true"] = true
-	keywords["false"] = true
-	keywords["for"] = true
-	keywords["while"] = true
-	keywords["do"] = true
-	keywords["end"] = true
-	keywords["in"] = true
-	keywords["then"] = true
-	keywords["not"] = true
-	keywords["defer"] = true
-	keywords["break"] = true
-	keywords["fallthrough"] = true
-	keywords["switch"] = true
 
 	local line_split = "([^\n]-)\n"
 	local line_num: integer

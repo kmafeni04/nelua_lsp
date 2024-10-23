@@ -2,6 +2,8 @@ require 'io'
 
 require 'utils.response'
 
+local keywords = require 'utils.keywords'
+
 local CompletionItemKind = @enum{
 	Text = 1,
 	Method,
@@ -233,6 +235,9 @@ The value at index `0` is usually filled with the program executable name. The v
 
   local primitive_type_io = create_completion("", "io", "io", InsertTextFormat.PlainText, CompletionItemKind.Class)
 	completions:push(primitive_type_io)
+
+  local primitive_type_filestream = create_completion("", "filestream", "filestream", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_filestream)
 ---------------------------------------
 
 ---------- Builtin functions ----------
@@ -591,37 +596,254 @@ The call `io.lines()` (with no file name) is equivalent to `io.input():lines("l"
 It currently never closes the file when the iteration finishes. In case of errors opening the file, this function raises the error, instead of returning an error code.
 ]], "io.lines(filename?, fmt?)", "io.lines", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(io_lines)
+------------- Filestream --------------
+  local filestream_fromfp = create_completion([[
+```nelua
+function filestream._fromfp(fp: *FILE, closef: function(fp: *FILE): cint): filestream
+```
+
+Initialize a new `filestream` from a given C `FILE` pointer. `closef` is a callback to call when closing the file handle.
+
+This function is used internally.
+]], "filestream._fromfp(fp, closef)", "filestream._fromfp", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_fromfp)
+
+  local filestream_getfp = create_completion([[
+```nelua
+function filestream._getfp(fs: filestream): *FILE
+```
+
+Returns a C `FILE` pointer for the filestream. In case the file is closed, returns `nilptr`.
+
+This function is used internally
+]], "filestream._getfp(fs)", "filestream._getfp", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_getfp)
+
+  local filestream_open = create_completion([[
+```nelua
+function filestream.open(filename: string, mode: facultative(string)) : (filestream, string, integer)
+```
+
+Opens a file, in the mode specified in the string `mode`. In case of success, it returns an open file. Otherwise, returns a closed file handle, plus an error message and a system-dependent error code.
+
+The mode string can be any of the following:
+
+  - `"r"`: read mode (the default);
+  - `"w"`: write mode;
+  - `"a"`: append mode;
+  - `"r+"`: update mode, all previous data is preserved;
+  - `"w+"`: update mode, all previous data is erased;
+  - `"a+"`: append update mode, previous data is preserved, writing is only allowed at the end of file.
+
+The mode string can also have a ‘b’ at the end, which is needed in some systems to open the file in binary mode.
+]], "filestream._open(filename, mode?)", "filestream._open", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_open)
+
+  local filestream_flush = create_completion([[
+```nelua
+function filestream.flush(fs: filestream): (boolean, string, integer)
+```
+
+Saves any written data to file.
+
+Returns `true` on success, otherwise `false` plus an error message and a system-dependent error code.
+]], "filestream.flush(fs)", "filestream.flush", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_flush)
+
+  local filestream_close = create_completion([[
+```nelua
+function filestream.close(fs: filestream): (boolean, string, integer)
+```
+
+Closes the file.
+
+Returns `true` on success, otherwise `false` plus an error message and a system-dependent error code.
+]], "filestream.close(fs)", "filestream.close", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_close)
+
+  local filestream_destroy = create_completion([[
+```nelua
+function filestream.destroy(fs: filestream): void
+```
+
+Destroys a file stream freeing its memory. If the file still open, it’s silently closed.
+
+This function is only needed to be called when not using the GC
+]], "filestream.destroy(fs)", "filestream.destroy", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_destroy)
+
+  local filestream___close = create_completion([[
+```nelua
+function filestream.__close(fs: filestream): void
+```
+
+Effectively the same as `destroy`, called when a to-be-closed variable goes out of scope.
+]], "filestream.__close(fs)", "filestream.__close", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream___close)
+
+  local filestream_seek = create_completion([[
+```nelua
+function filestream.seek(fs: filestream, whence: facultative(string), offset: facultative(integer)): (integer, string, integer)
+```
+
+Sets and gets the file position, measured from the beginning of the file, to the position given by `offset` plus a base specified by the string `whence`, as follows:
+
+  - `"set"`: base is position 0 (beginning of the file)
+  - `"cur"`: base is current position
+  - `"end"`: base is end of file
+
+In case of success, returns the final file position, measured in bytes from the beginning of the file. If seek fails, it returns `-1`, plus an error message and a system-dependent error code.
+
+The default value for whence is `"cur"`, and for offset is `0`. Therefore, the call `filestream:seek()` returns the current file position, without changing it.
+
+The call `filestream:seek("set")` sets the position to the beginning of the file (and returns `0`). The call `filestream:seek("end")` sets the position to the end of the file, and returns its size.
+]], "filestream.seek(fs, whence?, offset?)", "filestream.seek", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_seek)
+
+  local filestream_setvbuf = create_completion([[
+```nelua
+function filestream.setvbuf(fs: filestream, mode: string, size: facultative(integer)): (boolean, string, integer)
+```
+
+Sets the buffering mode for a file. There are three available modes:
+
+  - `"no"`: no buffering.
+  - `"full"`: full buffering.
+  - `"line"`: line buffering.
+
+For the last two cases, size is a hint for the size of the buffer, in bytes. The default is an appropriate size.
+
+The specific behavior of each mode is non portable, check the underlying ISO C function `setvbuf` in your platform for more details.
+
+Returns `true` on success, otherwise `false` plus an error message and a system-dependent error code.
+]], "filestream.setvbuf(fs, mode, size?)", "filestream.setvbuf", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_setvbuf)
+
+  local filestream_read = create_completion([[
+```nelua
+function filestream.read(fs: filestream, fmt: overload(integer,string,niltype)): (string, string, integer)
+```
+
+Reads the file file, according to the given formats, which specify what to read.
+
+The function returns a string with the characters read. Otherwise, if it cannot read data with the specified format, it returns an empty string plus an error message and a system-dependent error code.
+
+The available formats are:
+
+  - `"a"`: reads the whole file, starting at the current position. On end of file, it returns the empty string, this format never fails.
+  - `"l"`: reads the next line skipping the end of line, returning fail on end of file.
+  - `"L"`: reads the next line keeping the end-of-line character (if present), returning fail on end of file.
+  - `integer`: reads a string with up to this number of bytes, returning fail on end of file. If number is zero, it reads nothing and returns an empty string, or fail on end of file.
+
+The formats `"l"` and `"L"` should be used only for text files. When called without arguments, it uses the default format `"l"` that reads the next line.
+]], "filestream.read(fs, fmt?)", "filestream.read", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_read)
+
+  local filestream_write = create_completion([[
+```nelua
+function filestream.write(fs: filestream, ...: varargs): (boolean, string, integer)
+```
+
+Writes values to the file. The arguments must be strings or convertible to string.
+
+Returns `true` on success, otherwise `false` plus an error message and a system-dependent error code.
+]], "filestream.write(fs, ...)", "filestream.write", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_write)
+
+  local filestream_writef = create_completion([[
+```nelua
+function filestream.writef(fs: filestream, fmt: string, ...: varargs): (boolean, string, integer)
+```
+
+Writefs values to the file. The arguments must be strings or convertible to string.
+
+Returns `true` on success, otherwise `false` plus an error message and a system-dependent error code.
+]], "filestream.writef(fs, fmt, ...)", "filestream.writef", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_writef)
+
+  local filestream_printf = create_completion([[
+```nelua
+function filestream.printf(fs: filestream, ...: varargs): void
+```
+
+Like `filestream:writef` but also flushes the standard output.
+]], "filestream.printf(fs, ...)", "filestream.printf", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_printf)
+
+  local filestream_print = create_completion([[
+```nelua
+function filestream.print(fs: filestream, ...: varargs): void
+```
+
+Like print, but writes to a filestream.
+]], "filestream.print(fs, ...)", "filestream.print", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_print)
+
+  local filestream_lines = create_completion([[
+```nelua
+function filestream.lines(fs: filestream, fmt: overload(integer,string,niltype)): (auto, auto, string)
+```
+
+Returns an iterator function that, each time it is called, reads the file according to the given format. When no format is given, uses `"l"` as a default. As an example, the construction
+
+```nelua
+for c in filestream:lines(1) do body end
+```
+
+will iterate over all characters of the file, starting at the current position.
+]], "filestream.lines(fs, fmt?)", "filestream.lines", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_lines)
+
+  local filestream_isopen = create_completion([[
+```nelua
+function filestream.isopen(fs: filestream): boolean
+```
+
+Checks whether the file is open.
+]], "filestream.isopen(fs)", "filestream.isopen", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream_isopen)
+
+  local filestream___tostring = create_completion([[
+```nelua
+function filestream.__tostring(fs: filestream): string
+```
+
+Convert the file handle to a string. Returns "filed (closed)" for invalid or closed files, and "file (some address)" for open files.
+
+This metamethod is used by tostring.
+]], "filestream.__tostring(fs)", "filestream.__tostring", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(filestream___tostring)
 ---------------------------------------
 
 -------------- Snippets ---------------
-  local snippet_if = create_completion("", "if .. then", "if $1 then\n\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_if = create_completion("", "if .. then", "if $1 then\n\b\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_if)
 
   local snippet_elseif = create_completion("", "elseif .. then", "elseif $1 then", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_elseif)
 
-  local snippet_while = create_completion("", "while .. do", "while $1 do\n\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_while = create_completion("", "while .. do", "while $1 do\n\b\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_while)
 
-  local snippet_do = create_completion("", "do .. end", "do \n$1\n end", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_do = create_completion("", "do .. end", "do \n\b$1\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_do)
 
-  local snippet_switch = create_completion("", "switch .. end", "switch $1 do\n\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_switch = create_completion("", "switch .. end", "switch $1 do\n\b\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_switch)
 
   local snippet_case = create_completion("", "case .. then", "case $1 then", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_case)
 
-  local snippet_defer = create_completion("", "defer .. end", "defer \n$1\n end", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_defer = create_completion("", "defer .. end", "defer \n\b$1\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_defer)
 
-  local snippet_repeat = create_completion("", "repeat .. until", "repeat\n\nuntil $1", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_repeat = create_completion("", "repeat .. until", "repeat\n\b\nuntil $1", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_repeat)
 
   local snippet_forin_generic = create_completion(
 		"", 
 		"for .. func", 
-		"for ${1:value} in ${2:func()} do\n\nend", 
+		"for ${1:value} in ${2:func()} do\n\b\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -630,7 +852,7 @@ It currently never closes the file when the iteration finishes. In case of error
   local snippet_forin_pairs = create_completion(
 		"", 
 		"for .. pairs", 
-		"for ${1:key}, ${2:value} in pairs(${3:a}) do\n\nend", 
+		"for ${1:key}, ${2:value} in pairs(${3:a}) do\n\b\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -639,7 +861,7 @@ It currently never closes the file when the iteration finishes. In case of error
   local snippet_forin_mpairs = create_completion(
 		"", 
 		"for .. mpairs", 
-		"for ${1:key}, ${2:value} in mpairs(${3:a}) do\n\nend", 
+		"for ${1:key}, ${2:value} in mpairs(${3:a}) do\n\b\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -648,7 +870,7 @@ It currently never closes the file when the iteration finishes. In case of error
   local snippet_forin_ipairs = create_completion(
 		"", 
 		"for .. ipairs", 
-		"for ${1:index}, ${2:value} in ipairs(${3:a}) do\n\nend", 
+		"for ${1:index}, ${2:value} in ipairs(${3:a}) do\n\b\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -657,7 +879,7 @@ It currently never closes the file when the iteration finishes. In case of error
   local snippet_forin_mipairs = create_completion(
 		"", 
 		"for .. mipairs", 
-		"for ${1:index}, ${2:value} in mipairs(${3:a}) do\n\nend", 
+		"for ${1:index}, ${2:value} in mipairs(${3:a}) do\n\b\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -666,7 +888,7 @@ It currently never closes the file when the iteration finishes. In case of error
   local snippet_forn = create_completion(
 		"", 
 		"for i = ..", 
-		"for ${1:i} = ${2:1}, ${3:10} do\n\nend", 
+		"for ${1:i} = ${2:1}, ${3:10} do\n\b\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -675,7 +897,7 @@ It currently never closes the file when the iteration finishes. In case of error
 	local snippet_localfunc = create_completion(
 		"", 
 		"local function", 
-		"local function $1()\n\nend", 
+		"local function $1()\n\b\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -684,7 +906,7 @@ It currently never closes the file when the iteration finishes. In case of error
 	local snippet_globalfunc = create_completion(
 		"", 
 		"global function", 
-		"global function $1()\n\nend", 
+		"global function $1()\n\b\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -700,10 +922,11 @@ It currently never closes the file when the iteration finishes. In case of error
 		end
 	end
 
+
 	local seen_identifiers: hashmap(string, boolean)
 	local unique_identifiers: sequence(string)
 	for _, identifier  in ipairs(identifiers) do
-		if not seen_identifiers[identifier] then
+		if not seen_identifiers[identifier] and not keywords[identifier] then
 			unique_identifiers:push(identifier)
 			seen_identifiers[identifier] = true
 		end
