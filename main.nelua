@@ -83,14 +83,6 @@ while true do
 		if request_method == "textDocument/didChange" then
 			current_file = server.did_change(documents, request_params, current_uri)
 			documents[current_uri] = current_file
-			-- local tmp_name = os.tmpname():gsub("/", "_")
-			-- local _, current_file_name_seq = current_file_path:match("[^/]+.nelua")
-			-- local current_dir = current_file_path:sub(1, #current_file_path - #current_file_name_seq[1])
-			
-			-- local tmp_file_name = current_dir .. tmp_name .. "." .. current_file_path:gsub("/", ".")
-			-- local tmp_file <close> = io.open(tmp_file_name, "w")
-			-- tmp_file:write(current_file)
-			-- local path_sub_tmp = tmp_file_name:sub(1, -#".nelua "):sub(#current_dir + #tmp_name + 2):gsub("%.", "/") .. ".nelua"
 
 			parse_err = server.diagnostic(current_file, current_file_path, current_uri, root_uri)
 		end

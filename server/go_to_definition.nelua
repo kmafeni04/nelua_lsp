@@ -126,6 +126,13 @@ local function go_to_definition(
 			## local function just_selection(selection)
       	in "%f[%w_]" .. #[selection]# .. "%f[^%w_]"
       ## end
+			## local function push_definition(uri, s_line, s_char, e_line, e_char)
+				go_to_uris:push(#[uri]#)
+				go_to_s_lines:push(#[s_line]#)
+				go_to_s_chars:push(#[s_char]#)
+				go_to_e_lines:push(#[e_line]#)
+				go_to_e_chars:push(#[e_char]#)
+			## end
 
 			## local function closest_goto(name, search, togo)
 				local #|name .. "_line_num"|#: integer
@@ -149,17 +156,19 @@ local function go_to_definition(
           end 
 				end
 				if # #|name .. "_positions"|# > 0 then
-					go_to_uris:push(current_uri)
-					go_to_s_lines:push(closest_line)
-					go_to_s_chars:push(#|name .. "_positions"|#[closest_line])
-					go_to_e_lines:push(closest_line)
-					go_to_e_chars:push(#|name .. "_positions"|#[closest_line] + #identifier)
+					local s_char = #|name .. "_positions"|#[closest_line]
+					local e_char = #|name .. "_positions"|#[closest_line] + #identifier
+					## push_definition(current_uri, closest_line , s_char, closest_line, e_char)
+					## if no_repeat then
+					## end
 					## if togo then
 						goto definition_found
+					## else
+						#|name .. "_repeat"|# = false
 					## end
 				end
 			## end
-			local start_idx, end_idx = current_char + 1, current_char
+			local start_idx, end_idx = current_char + 1, current_char + 1
 
 			while start_idx > 1 and line:sub(start_idx - 1, start_idx - 1):match(#[just_selection]#("[%w_]+")) do
 				start_idx = start_idx - 1
@@ -174,6 +183,7 @@ local function go_to_definition(
 			for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
 				if not keywords[identifier] and identifier == word then
 ------- Local and Global Variables ------
+					local local_repeat = true
 					local local_search = "local%s*[^=]+" .. #[just_selection]#(identifier)
 					## closest_goto("local", local_search)
 
@@ -185,12 +195,8 @@ local function go_to_definition(
 							for l in document:gmatch(line_split) do
 								if l:match(global_match) then
 									local find_start, find_end = l:find(identifier)
-									go_to_uris:push(uri)
-									go_to_s_lines:push(global_find_line)
-									go_to_s_chars:push(find_start - 1)
-									go_to_e_lines:push(global_find_line)
-									go_to_e_chars:push(find_end)
-
+									find_start = find_start - 1
+									## push_definition(uri, global_find_line , find_start, global_find_line, find_end)
 									goto definition_found
 								end
 								global_find_line = global_find_line + 1
@@ -203,31 +209,38 @@ local function go_to_definition(
 						local find_matched, find_seq = global_git_find:match("(.+):(%d+):.*")
 						if find_matched then
 							local global_path = find_seq[1]
-							local global_line = tointeger(find_seq[2]) - 1
+							local global_find_line = tointeger(find_seq[2]) - 1
 							local global_find_file = io.open(global_path)
 							for l in global_find_file:lines() do
 								if l:match("global[^=]+%f[%w_]" .. #[just_selection]#(identifier)) then
 									local find_start, find_end = l:find("%f[%w_]" .. identifier .. "%f[^%w_]")
-									go_to_uris:push(file_scheme  .. root_uri .. "/" .. global_path)
-									go_to_s_lines:push(global_line)
-									go_to_s_chars:push(find_start - 1)
-									go_to_e_lines:push(global_line)
-									go_to_e_chars:push(find_end)
+									find_start = find_start - 1
+									local uri = file_scheme  .. root_uri .. "/" .. global_path
+									## push_definition(uri, global_find_line , find_start, global_find_line, find_end)
 								end
 							end
 							goto definition_found
 						end
 					end
+
+					if not local_repeat then
+						goto definition_found
+					end
 -----------------------------------------
 ------------- For Variables -------------
-					local stepped_for_search = "for%s*[^=]+" .. #[just_selection]#(identifier)
-					## closest_goto("for", stepped_for_search, true)
+					local stepped_for_search = "for%s*[^=]+" .. #[just_selection]#(identifier) .. "%s*="
+					## closest_goto("stepped_for", stepped_for_search, true)
 					local exclusive_for_search = "for.-%" .. #[just_selection]#(identifier) .. "%s*in"
-					## closest_goto("for", exclusive_for_search, true)
+					## closest_goto("exclusive_for", exclusive_for_search, true)
 -----------------------------------------
 -------------- Goto Labels --------------
 					local goto_search = "::" .. #[just_selection]#(identifier) .. "::"
 					## closest_goto("goto", goto_search, true)
+-----------------------------------------
+---------------- Params -----------------
+					-- Isn't working with record functions
+					local param_search = "function%.-([%w_]+%.:)?[%w_]+%s*%(.-" .. #[just_selection]#(identifier) .. "%s*:"
+					## closest_goto("param", param_search, true)
 -----------------------------------------
 				end
 			end
