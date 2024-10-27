@@ -413,7 +413,6 @@ If `index` is a number, returns all arguments after argument number index; a neg
 	completions:push(builtin_func_select)
 ---------------------------------------
 
--- TODO: Finish IO completions
 ----------------- Io ------------------
   local io_stderr = create_completion([[
 ```nelua
@@ -596,6 +595,8 @@ The call `io.lines()` (with no file name) is equivalent to `io.input():lines("l"
 It currently never closes the file when the iteration finishes. In case of errors opening the file, this function raises the error, instead of returning an error code.
 ]], "io.lines(filename?, fmt?)", "io.lines", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(io_lines)
+---------------------------------------
+
 ------------- Filestream --------------
   local filestream_fromfp = create_completion([[
 ```nelua
@@ -813,6 +814,536 @@ Convert the file handle to a string. Returns "filed (closed)" for invalid or clo
 This metamethod is used by tostring.
 ]], "filestream.__tostring(fs)", "filestream.__tostring", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(filestream___tostring)
+---------------- Math -----------------
+  local math_abs = create_completion([[
+```nelua
+function math.abs(x: an_scalar): auto
+```
+
+Returns the absolute value of x, that is, the maximum value between x and -x.
+
+The argument type is always preserved.
+]], "math.abs(x)", "math.abs", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_abs)
+
+  local math_floor = create_completion([[
+```nelua
+function math.floor(x: an_scalar): auto
+```
+
+Returns the largest integral value less than or equal to x.
+]], "math.floor(x)", "math.floor", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_floor)
+
+  local math_ifloor = create_completion([[
+```nelua
+function math.ifloor(x: an_scalar): auto
+```
+
+Like `math.floor`, but the result is always converted to an integer.
+]], "math.ifloor(x)", "math.ifloor", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_ifloor)
+
+  local math_ceil = create_completion([[
+```nelua
+function math.ceil(x: an_scalar): auto
+```
+
+Returns the smallest integral value greater than or equal to x.
+]], "math.ceil(x)", "math.ceil", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_ceil)
+
+  local math_iceil = create_completion([[
+```nelua
+function math.iceil(x: an_scalar): auto
+```
+
+Like `math.ceil`, but the result is always converted to an integer.
+]], "math.iceil(x)", "math.iceil", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_iceil)
+
+  local math_round = create_completion([[
+```nelua
+function math.round(x: an_scalar): auto
+```
+
+Returns the rounded value of x towards the nearest integer. Halfway cases are rounded away from zero.
+]], "math.round(x)", "math.round", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_round)
+
+  local math_iround = create_completion([[
+```nelua
+function math.iround(x: an_scalar): auto
+```
+
+Like `math.round`, but the result is always converted to an integer.
+]], "math.iround(x)", "math.iround", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_iround)
+
+  local math_iround = create_completion([[
+```nelua
+function math.iround(x: an_scalar): auto
+```
+
+Like `math.round`, but the result is always converted to an integer.
+]], "math.iround(x)", "math.iround", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_iround)
+
+  local math_trunc = create_completion([[
+```nelua
+function math.trunc(x: an_scalar): auto
+```
+
+Returns the rounded value of x towards zero.
+]], "math.trunc(x)", "math.trunc", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_trunc)
+
+  local math_itrunc = create_completion([[
+```nelua
+function math.itrunc(x: an_scalar): auto
+```
+
+Like `math.trunc`, but the result is always converted to an integer.
+]], "math.itrunc(x)", "math.itrunc", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_itrunc)
+
+  local math_sqrt = create_completion([[
+```nelua
+function math.sqrt(x: an_scalar): auto
+```
+
+Returns the square root of `x`. You can also use the expression `x^0.5` to compute this value.
+]], "math.sqrt(x)", "math.sqrt", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_sqrt)
+
+  local math_cbrt = create_completion([[
+```nelua
+function math.cbrt(x: an_scalar): auto
+```
+
+Returns the cubic root of x. You can also use the expression x^(1/3) to compute this value.
+]], "math.cbrt(x)", "math.cbrt", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_cbrt)
+
+  local math_exp = create_completion([[
+```nelua
+function math.exp(x: an_scalar): auto
+```
+
+Returns the value of `e^x` (where `e` is the base of natural logarithms).
+]], "math.exp(x)", "math.exp", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_exp)
+
+  local math_exp2 = create_completion([[
+```nelua
+function math.exp2(x: an_scalar): auto
+```
+
+Returns the value of 2^x. You can also use the expression 2^x to compute this value.
+]], "math.exp2(x)", "math.exp2", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_exp2)
+
+  local math_pow = create_completion([[
+```nelua
+function math.pow(x: an_scalar, y: an_scalar): auto
+```
+
+Returns `x^y`. You can also use the expression `x^y` to compute this value.
+]], "math.pow(x,y)", "math.pow", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_pow)
+
+  local math_log = create_completion([[
+```nelua
+function math.log(x: an_scalar, base: an_optional_scalar): auto
+```
+
+Returns the logarithm of `x` in the given base. The default for `base` is *e*, so that the function returns the natural logarithm of `x`.
+]], "math.log(x,base)", "math.log", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_log)
+
+  local math_cos = create_completion([[
+```nelua
+function math.cos(x: an_scalar): auto
+```
+
+Returns the cosine of `x` (assumed to be in radians).
+]], "math.cos(x)", "math.cos", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_cos)
+
+  local math_sin = create_completion([[
+```nelua
+function math.sin(x: an_scalar): auto
+```
+
+Returns the sine of `x` (assumed to be in radians).
+]], "math.sin(x)", "math.sin", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_sin)
+
+  local math_tan = create_completion([[
+```nelua
+function math.tan(x: an_scalar): auto
+```
+
+Returns the tangent of `x` (assumed to be in radians).
+]], "math.tan(x)", "math.tan", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_tan)
+
+  local math_acos = create_completion([[
+```nelua
+function math.acos(x: an_scalar): auto
+```
+
+Returns the arc cosine of `x` (in radians).
+]], "math.acos(x)", "math.acos", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_acos)
+
+  local math_asin = create_completion([[
+```nelua
+function math.asin(x: an_scalar): auto
+```
+
+Returns the arc sine of x (in radians).
+]], "math.asin(x)", "math.asin", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_asin)
+
+  local math_atan = create_completion([[
+```nelua
+function math.atan(y: an_scalar, x: an_optional_scalar): auto
+```
+
+Returns the arc tangent of `y/x` (in radians), but uses the signs of both arguments to find the quadrant of the result. It also handles correctly the case of `x` being zero.
+
+The default value for `x` is `1`, so that the call `math.atan(y)` returns the arc tangent of `y`.
+]], "math.atan(y,x)", "math.atan", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_atan)
+
+  local math_atan2 = create_completion([[
+```nelua
+function math.atan2(y: an_scalar, x: an_optional_scalar): auto
+```
+
+Returns the arc tangent of `y/x` (in radians), but uses the signs of both arguments to find the quadrant of the result. It also handles correctly the case of `x` being zero.
+]], "math.atan2(y,x)", "math.atan2", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_atan2)
+
+  local math_cosh = create_completion([[
+```nelua
+function math.cosh(x: an_scalar): auto
+```
+
+Returns the hyperbolic cosine of `x`.
+]], "math.cosh(x)", "math.cosh", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_cosh)
+
+  local math_sinh = create_completion([[
+```nelua
+function math.sinh(x: an_scalar): auto
+```
+
+Returns the hyperbolic sine of `x`.
+]], "math.sinh(x)", "math.sinh", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_sinh)
+
+  local math_tanh = create_completion([[
+```nelua
+function math.tanh(x: an_scalar): auto
+```
+
+Returns the hyperbolic tangent of `x`.
+]], "math.tanh(x)", "math.tanh", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_tanh)
+
+  local math_log10 = create_completion([[
+```nelua
+function math.log10(x: an_scalar): auto
+```
+
+Returns the base-10 logarithm of `x`
+]], "math.log10(x)", "math.log10", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_log10)
+
+  local math_log2 = create_completion([[
+```nelua
+function math.log2(x: an_scalar): auto
+```
+
+Returns the base-2 logarithm of `x`
+]], "math.log2(x)", "math.log2", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_log2)
+
+  local math_acosh = create_completion([[
+```nelua
+function math.acosh(x: an_scalar): auto
+```
+
+Returns the inverse hyperbolic cosine of `x`
+]], "math.acosh(x)", "math.acosh", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_acosh)
+
+  local math_asinh = create_completion([[
+```nelua
+function math.asinh(x: an_scalar): auto
+```
+
+Returns the inverse hyperbolic sine of `x`
+]], "math.asinh(x)", "math.asinh", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_asinh)
+
+  local math_atanh = create_completion([[
+```nelua
+function math.atanh(x: an_scalar): auto
+```
+
+Returns the inverse hyperbolic tangent of `x`
+]], "math.atanh(x)", "math.atanh", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_atanh)
+
+  local math_deg = create_completion([[
+```nelua
+function math.deg(x: an_scalar): auto
+```
+
+Converts the angle `x` from radians to degrees.
+]], "math.deg(x)", "math.deg", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_deg)
+
+  local math_rad = create_completion([[
+```nelua
+function math.rad(x: an_scalar): auto
+```
+
+Converts the angle `x` from degrees to radians.
+]], "math.rad(x)", "math.rad", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_rad)
+
+  local math_sign = create_completion([[
+```nelua
+function math.sign(x: an_scalar): auto
+```
+
+Returns the sign of `x`, that is:
+
+  - `-1 if x < 0`
+  - `0 if x == 0`
+  - `1 if x > 0`
+
+]], "math.sign(x)", "math.sign", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_sign)
+
+  local math_fract = create_completion([[
+```nelua
+function math.fract(x: an_scalar): auto
+```
+
+Returns the fractional part of `x`.
+
+Computed as `x - math.floor(x)`.
+]], "math.fract(x)", "math.fract", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_fract)
+
+  local math_mod = create_completion([[
+```nelua
+function math.mod(x: an_scalar, y: an_scalar): auto
+```
+
+Returns the modulo operation of `x` by `y`, rounded towards minus infinity.
+
+This is equivalent to `x % y`, but faster and subject to rounding errors. It’s computed as `x - math.floor(x / y) * y`.
+]], "math.mod(x,y)", "math.mod", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_mod)
+
+  local math_modf = create_completion([[
+```nelua
+function math.modf(x: an_scalar): (auto, auto)
+```
+
+Returns the integral part of `x` and the fractional part of `x`. Its second result is always a float.
+]], "math.modf(x)", "math.modf", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_modf)
+
+  local math_fmod = create_completion([[
+```nelua
+function math.fmod(x: an_scalar, y: an_scalar): auto
+```
+
+Returns the remainder of the division of `x` by `y` that rounds the quotient towards zero. The result can either be an integer or a float depending on the arguments.
+]], "math.fmod(x,y)", "math.fmod", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_fmod)
+
+  local math_frexp = create_completion([[
+```nelua
+function math.frexp(x: an_scalar): (auto, int32)
+```
+
+Returns `m` and `e` such that `x = m*(2^e)`, `e` is an integer and the absolute value of `m` is in the range [0.5, 1) or zero (when `x` is zero).
+]], "math.frexp(x)", "math.frexp", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_frexp)
+
+  local math_ldexp = create_completion([[
+```nelua
+function math.ldexp(m: an_scalar, e: int32): auto
+```
+
+Returns `m*(2^e)`, that is, `m` multiplied by an integral power of 2.
+]], "math.ldexp(m,e)", "math.ldexp", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_ldexp)
+
+  local math_ldexp = create_completion([[
+```nelua
+function math.ldexp(m: an_scalar, e: int32): auto
+```
+
+Returns `m*(2^e)`, that is, `m` multiplied by an integral power of 2.
+]], "math.ldexp(m,e)", "math.ldexp", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_ldexp)
+
+  local math_max = create_completion([[
+```nelua
+function math.max(...: varargs): auto
+```
+
+Returns the argument with the maximum value, according to the operator `<`.
+]], "math.max(...)", "math.max", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_max)
+
+  local math_clamp = create_completion([[
+```nelua
+function math.clamp(x: an_scalar, min: an_scalar, max: an_scalar): auto
+```
+
+Returns the value of `x` clamped between `min` and `max`.
+]], "math.clamp(x,min,max)", "math.clamp", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_clamp)
+
+  local math_ult = create_completion([[
+```nelua
+function math.ult(m: an_scalar, n: an_scalar): boolean
+```
+
+Returns a boolean, `true` if and only if integer `m` is below integer `n` when they are compared as unsigned integers.
+]], "math.ult(m,n)", "math.ult", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_ult)
+
+  local math_tointeger = create_completion([[
+```nelua
+function math.tointeger(x: an_scalar): auto
+```
+
+If the value x is convertible to an integer, returns that integer. Otherwise, returns nil.
+]], "math.tointeger(x)", "math.tointeger", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_tointeger)
+
+  local math_type = create_completion([[
+```nelua
+function math.type(x: an_scalar): auto
+```
+
+Returns `"integer"` if `x` is an integer, `“float”` if `x` is a float, or fail if `x` is not a number.
+]], "math.type(x)", "math.type", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_type)
+
+  local math_randomseed = create_completion([[
+```nelua
+function math.randomseed(x: an_optional_integral, y: an_optional_integral): (integer, integer)
+```
+
+When called with at least one argument, the integer parameters `x` and `y` are joined into a 128-bit seed that is used to reinitialize the pseudo-random generator. Equal seeds produce equal sequences of numbers. The default for y is zero.
+
+When called with no arguments, generates a seed with a weak attempt for randomness.
+
+This function returns the two seed components that were effectively used, so that setting them again repeats the sequence.
+
+To ensure a required level of randomness to the initial state (or contrarily, to have a deterministic sequence, for instance when debugging a program), you should call `math.randomseed` with explicit arguments.
+]], "math.randomseed(x,y)", "math.randomseed", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_randomseed)
+
+  local math_random = create_completion([[
+```nelua
+function math.random(m: an_optional_scalar, n: an_optional_scalar): auto
+```
+
+When called without arguments, returns a pseudo-random float with uniform distribution in the range [`0`,`1`). When called with two integers `m` and `n`, returns a pseudo-random integer with uniform distribution in the range [`m`, `n`].
+
+The call `math.random(n)`, for a positive n, is equivalent to `math.random(1,n)`. The call `math.random(0)` produces an integer with all bits (pseudo)random.
+
+This function uses an algorithm based on xoshiro256 to produce pseudo-random 64-bit integers, which are the results of calls with argument 0. Other results (ranges and floats) are unbiased extracted from these integers.
+
+Its pseudo-random generator is initialized with the equivalent of a call to `math.randomseed` with no arguments, so that `math.random` should generate different sequences of results each time the program runs.
+]], "math.random(m,n)", "math.random", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_random)
+
+  local math_isnan = create_completion([[
+```nelua
+function math.isnan(x: an_scalar): boolean
+```
+
+Returns true if value x is a NaN (not a number) floating point number.
+]], "math.isnan(x)", "math.isnan", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_isnan)
+
+  local math_isinf = create_completion([[
+```nelua
+function math.isinf(x: an_scalar): boolean
+```
+
+Returns true if value `x` is an infinite floating point number.
+]], "math.isinf(x)", "math.isinf", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_isinf)
+
+  local math_isfinite = create_completion([[
+```nelua
+function math.isfinite(x: an_scalar): boolean
+```
+
+Returns true if value `x` is a finite floating point number (neither NaN or Inf).
+]], "math.isfinite(x)", "math.isfinite", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(math_isfinite)
+
+  local math_pi = create_completion([[
+```nelua
+global math.pi: number
+```
+
+Float value of PI.
+]], "math.pi(x)", "math.pi", InsertTextFormat.PlainText, CompletionItemKind.Variable)
+	completions:push(math_pi)
+
+  local math_huge = create_completion([[
+```nelua
+global math.huge: number
+```
+
+Float value greater than any other numeric value (infinite).
+]], "math.huge(x)", "math.huge", InsertTextFormat.PlainText, CompletionItemKind.Variable)
+	completions:push(math_huge)
+
+  local math_mininteger = create_completion([[
+```nelua
+global math.mininteger: number
+```
+
+An integer with the minimum value for an integer.
+]], "math.mininteger(x)", "math.mininteger", InsertTextFormat.PlainText, CompletionItemKind.Variable)
+	completions:push(math_mininteger)
+
+  local math_maxinteger = create_completion([[
+```nelua
+global math.maxinteger: number
+```
+
+An integer with the maximum value for an integer.
+]], "math.maxinteger(x)", "math.maxinteger", InsertTextFormat.PlainText, CompletionItemKind.Variable)
+	completions:push(math_maxinteger)
+
+  local math_maxuinteger = create_completion([[
+```nelua
+global math.maxuinteger: number
+```
+
+An integer with the maximum value for an unsigned integer.
+]], "math.maxuinteger(x)", "math.maxuinteger", InsertTextFormat.PlainText, CompletionItemKind.Variable)
+	completions:push(math_maxuinteger)
+
 ---------------------------------------
 
 -------------- Snippets ---------------
