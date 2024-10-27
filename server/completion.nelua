@@ -238,6 +238,12 @@ The value at index `0` is usually filled with the program executable name. The v
 
   local primitive_type_filestream = create_completion("", "filestream", "filestream", InsertTextFormat.PlainText, CompletionItemKind.Class)
 	completions:push(primitive_type_filestream)
+
+  local primitive_type_math = create_completion("", "math", "math", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_math)
+
+  local primitive_type_memory = create_completion("", "memory", "memory", InsertTextFormat.PlainText, CompletionItemKind.Class)
+	completions:push(primitive_type_memory)
 ---------------------------------------
 
 ---------- Builtin functions ----------
@@ -814,6 +820,8 @@ Convert the file handle to a string. Returns "filed (closed)" for invalid or clo
 This metamethod is used by tostring.
 ]], "filestream.__tostring(fs)", "filestream.__tostring", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(filestream___tostring)
+---------------------------------------
+
 ---------------- Math -----------------
   local math_abs = create_completion([[
 ```nelua
@@ -1002,7 +1010,7 @@ Returns the arc cosine of `x` (in radians).
 function math.asin(x: an_scalar): auto
 ```
 
-Returns the arc sine of x (in radians).
+Returns the arc sine of `x` (in radians).
 ]], "math.asin(x)", "math.asin", InsertTextFormat.PlainText, CompletionItemKind.Function)
 	completions:push(math_asin)
 
@@ -1343,7 +1351,163 @@ global math.maxuinteger: number
 An integer with the maximum value for an unsigned integer.
 ]], "math.maxuinteger(x)", "math.maxuinteger", InsertTextFormat.PlainText, CompletionItemKind.Variable)
 	completions:push(math_maxuinteger)
+---------------------------------------
 
+--------------- Memory ----------------
+  local memory_copy = create_completion([[
+```nelua
+function memory.copy(dest: pointer, src: pointer, n: usize): void
+```
+
+Copies n bytes from memory pointed by src into memory pointed by dest. If n is zero, then nothing is done.
+
+The memory region may not overlap, use memory.move in that case.
+]], "memory.copy(dest,src,n)", "memory.copy", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_copy)
+
+  local memory_move = create_completion([[
+```nelua
+function memory.move(dest: pointer, src: pointer, n: usize): void
+```
+
+Copies `n` bytes from memory pointed by `src` into memory pointed by `dest`. The memory region may overlap. If `n` is zero, then nothing is done.
+
+If the memory region is guaranteed to not overlap, then you could use `memory.copy`.
+]], "memory.move(dest,src,n)", "memory.move", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_move)
+
+  local memory_set = create_completion([[
+```nelua
+function memory.set(dest: pointer, x: byte, n: usize): void
+```
+
+Fills first `n` bytes of the memory pointed by dest with the byte `x`. If `n` is zero, then nothing is done.
+]], "memory.set(dest,x,n)", "memory.set", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_set)
+
+  local memory_zero = create_completion([[
+```nelua
+function memory.zero(dest: pointer, n: usize): void
+```
+
+Fills first `n` bytes of the memory pointed by `dest` with zeros. If `n` is zero, then nothing is done.
+]], "memory.zero(dest,n)", "memory.zero", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_zero)
+
+  local memory_compare = create_completion([[
+```nelua
+function memory.compare(a: pointer, b: pointer, n: usize): int32
+```
+
+Compares the first `n` bytes of the memory areas pointed by `a` and `b`.
+
+Returns an integer less than, equal to, or greater than zero if the first `n` bytes of `a` is found, respectively, to be less than, to match, or be greater than the first `n` bytes of `b`.
+
+The sign is determined by the sign of the difference between the first pair of bytes that differ in `a` and `b`.
+
+If n is zero, the return value is zero.
+]], "memory.compare(a,b,n)", "memory.compare", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_compare)
+
+  local memory_equals = create_completion([[
+```nelua
+function memory.equals(a: pointer, b: pointer, n: usize): boolean
+```
+
+Check if the first `n` bytes of the memory areas pointed by `a` and `b` are equal.
+
+Returns `true` if the first `n` bytes of `a` is equal to the first `n` bytes of `b`.
+
+If `n` is zero, the return value is `true`.
+]], "memory.equals(a,b,n)", "memory.equals", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_equals)
+
+  local memory_scan = create_completion([[
+```nelua
+function memory.scan(src: pointer, x: byte, n: usize): pointer
+```
+
+Scan first `n` bytes from memory pointed by `src` for the first instance of byte `x`.
+
+Returns a pointer to the matching byte when found, otherwise `nilptr`.
+
+If `n` is zero, the return value is `nilptr`.
+]], "memory.scan(src,x,n)", "memory.scan", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_scan)
+
+  local memory_find = create_completion([[
+```nelua
+function memory.find(haystack: pointer, haystacksize: usize, needle: pointer, needlesize: usize): pointer
+```
+
+Scan first `haystacksize` bytes from memory pointed by `haystack` for the first instance of the chunk of memory in the region determined by `needle` and `needlesize`.
+
+Returns a pointer to the matching chunk when found, otherwise `nilptr`.
+]], "memory.find(h,hs,n,ns)", "memory.find", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_find)
+
+  local memory_spancopy = create_completion([[
+```nelua
+function memory.spancopy(dest: an_span, src: an_span): void
+```
+
+Like `memory.copy` but operate over spans.
+]], "memory.spancopy(dest,src)", "memory.spancopy", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_spancopy)
+
+  local memory_spanmove = create_completion([[
+```nelua
+function memory.spanmove(dest: an_span, src: an_span): void
+```
+
+Like `memory.move` but operate over spans.
+]], "memory.spanmove(dest,src)", "memory.spanmove", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_spanmove)
+
+  local memory_spanset = create_completion([[
+```nelua
+function memory.spanset(dest: an_span, x: auto): void
+```
+
+Like `memory.set` but operate over spans.
+]], "memory.spanset(dest,x)", "memory.spanset", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_spanset)
+
+  local memory_spanzero = create_completion([[
+```nelua
+function memory.spanzero(dest: an_span): void
+```
+
+Like `memory.zero` but operate over spans.
+]], "memory.spanzero(dest)", "memory.spanzero", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_spanzero)
+
+  local memory_spancompare = create_completion([[
+```nelua
+function memory.spancompare(a: an_span, b: an_span): int32
+```
+
+Like `memory.compare` but operate over spans.
+]], "memory.spancompare(a,b)", "memory.spancompare", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_spancompare)
+
+  local memory_spanequals = create_completion([[
+```nelua
+function memory.spanequals(a: an_span, b: an_span): boolean
+```
+
+Like `memory.equals` but operate over spans.
+]], "memory.spanequals(a,b)", "memory.spanequals", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_spanequals)
+
+  local memory_spanfind = create_completion([[
+```nelua
+function memory.spanfind(s: an_span, x: auto): isize
+```
+
+Scan span `s` for value `x` and returns its respective index. In case `x` is not found `-1` is returned.
+]], "memory.spanfind(s,x)", "memory.spanfind", InsertTextFormat.PlainText, CompletionItemKind.Function)
+	completions:push(memory_spanfind)
 ---------------------------------------
 
 -------------- Snippets ---------------
