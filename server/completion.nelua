@@ -1511,34 +1511,34 @@ Scan span `s` for value `x` and returns its respective index. In case `x` is not
 ---------------------------------------
 
 -------------- Snippets ---------------
-  local snippet_if = create_completion("", "if .. then", "if $1 then\n\b\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_if = create_completion("", "if .. then", "if $1 then\n\t\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_if)
 
   local snippet_elseif = create_completion("", "elseif .. then", "elseif $1 then", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_elseif)
 
-  local snippet_while = create_completion("", "while .. do", "while $1 do\n\b\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_while = create_completion("", "while .. do", "while $1 do\n\t\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_while)
 
-  local snippet_do = create_completion("", "do .. end", "do \n\b$1\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_do = create_completion("", "do .. end", "do \n\t$1\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_do)
 
-  local snippet_switch = create_completion("", "switch .. end", "switch $1 do\n\b\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_switch = create_completion("", "switch .. end", "switch $1 do\n\t\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_switch)
 
   local snippet_case = create_completion("", "case .. then", "case $1 then", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_case)
 
-  local snippet_defer = create_completion("", "defer .. end", "defer \n\b$1\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_defer = create_completion("", "defer .. end", "defer \n\t$1\nend", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_defer)
 
-  local snippet_repeat = create_completion("", "repeat .. until", "repeat\n\b\nuntil $1", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
+  local snippet_repeat = create_completion("", "repeat .. until", "repeat\n\t\nuntil $1", InsertTextFormat.Snippet, CompletionItemKind.Snippet)
 	completions:push(snippet_repeat)
 
   local snippet_forin_generic = create_completion(
 		"", 
 		"for .. func", 
-		"for ${1:value} in ${2:func()} do\n\b\nend", 
+		"for ${1:value} in ${2:func()} do\n\t\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -1547,7 +1547,7 @@ Scan span `s` for value `x` and returns its respective index. In case `x` is not
   local snippet_forin_pairs = create_completion(
 		"", 
 		"for .. pairs", 
-		"for ${1:key}, ${2:value} in pairs(${3:a}) do\n\b\nend", 
+		"for ${1:key}, ${2:value} in pairs(${3:a}) do\n\t\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -1556,7 +1556,7 @@ Scan span `s` for value `x` and returns its respective index. In case `x` is not
   local snippet_forin_mpairs = create_completion(
 		"", 
 		"for .. mpairs", 
-		"for ${1:key}, ${2:value} in mpairs(${3:a}) do\n\b\nend", 
+		"for ${1:key}, ${2:value} in mpairs(${3:a}) do\n\t\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -1565,7 +1565,7 @@ Scan span `s` for value `x` and returns its respective index. In case `x` is not
   local snippet_forin_ipairs = create_completion(
 		"", 
 		"for .. ipairs", 
-		"for ${1:index}, ${2:value} in ipairs(${3:a}) do\n\b\nend", 
+		"for ${1:index}, ${2:value} in ipairs(${3:a}) do\n\t\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -1574,7 +1574,7 @@ Scan span `s` for value `x` and returns its respective index. In case `x` is not
   local snippet_forin_mipairs = create_completion(
 		"", 
 		"for .. mipairs", 
-		"for ${1:index}, ${2:value} in mipairs(${3:a}) do\n\b\nend", 
+		"for ${1:index}, ${2:value} in mipairs(${3:a}) do\n\t\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -1583,7 +1583,7 @@ Scan span `s` for value `x` and returns its respective index. In case `x` is not
   local snippet_forn = create_completion(
 		"", 
 		"for i = ..", 
-		"for ${1:i} = ${2:1}, ${3:10} do\n\b\nend", 
+		"for ${1:i} = ${2:1}, ${3:10} do\n\t\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -1592,7 +1592,7 @@ Scan span `s` for value `x` and returns its respective index. In case `x` is not
 	local snippet_localfunc = create_completion(
 		"", 
 		"local function", 
-		"local function $1()\n\b\nend", 
+		"local function $1()\n\t\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
@@ -1601,7 +1601,7 @@ Scan span `s` for value `x` and returns its respective index. In case `x` is not
 	local snippet_globalfunc = create_completion(
 		"", 
 		"global function", 
-		"global function $1()\n\b\nend", 
+		"global function $1()\n\t\nend", 
 		InsertTextFormat.Snippet, 
 		CompletionItemKind.Snippet
 	)
