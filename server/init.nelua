@@ -84,8 +84,8 @@ function server.go_to_definition(
 	)
 end
 
-function server.completion(request_id: integer, current_file: string)
-	completion(request_id, current_file)
+function server.completion(request_id: integer, documents: hashmap(string, string))
+	completion(request_id, documents)
 end
 
 function server.shutdown()

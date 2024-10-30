@@ -115,7 +115,7 @@ while true do
 		end
 
 		if request_method == "textDocument/completion" then
-			server.completion(request_id, current_file)
+			server.completion(request_id, documents)
 		end
 	
 		if request_method == "shutdown" then
