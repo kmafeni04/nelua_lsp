@@ -49,21 +49,21 @@ local function search_ast(blocks: sequence(Block), identifier: string): (Block, 
   local empty_block: Block
   for _, block  in ipairs(blocks) do
     if block.name == "Id" then
-      if block.attr["name"] == identifier then
+      if $block.attr:peek("name") == identifier then
         return block, false
       end
     elseif block.name == "IdDecl" then
-      if block.attr["name"] == identifier then
+      if $block.attr:peek("name") == identifier then
         return block, false
       end
     elseif block.name == "DotIndex" then
-      if block.attr["name"]:match("%." .. identifier) then
+      if ($block.attr:peek("name")):match("%." .. identifier) then
         return block, false
       elseif block.attr["dotfieldname"] == identifier then
         return block, false
       end
     elseif block.name == "CallMethod" then
-      if block.attr["calleesym"]:match("%." .. identifier) then
+      if ($block.attr:peek("calleesym")):match("%." .. identifier) then
         block.attr["type"] = block.attr["calleetype"]
         return block, false
       end

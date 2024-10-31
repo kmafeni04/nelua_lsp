@@ -32,7 +32,7 @@ local function hover(
 		if line_num == current_line then
 			local identifier_find_start: integer
 			for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
-				if not keywords[identifier] then
+				if keywords:peek(identifier) == nilptr then
 					local identifier_matched, identifier_seq = line:match("%f[%w_]" .. identifier .. "%f[^%w_]")
 					local identifier_start = line:find("%f[%w_]" .. identifier_seq[1] .. "%f[^%w_]", identifier_find_start) - 1
 					identifier_find_start = identifier_start + #identifier

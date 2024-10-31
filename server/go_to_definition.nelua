@@ -22,9 +22,9 @@ local function go_to_definition(
 		current_file = documents[current_uri]
 	end
 
-	-- if parse_err then
-	-- 	goto definition_found
-	-- end
+	if parse_err then
+		goto definition_found
+	end
 
 	local go_to_definition: string
 	local go_to_uris: sequence(string)
@@ -36,7 +36,6 @@ local function go_to_definition(
 
 	local line_split = "([^\n]-)\n"
 	local line_num: integer
-	-- logger.log(current_file)
 	for line in current_file:gmatch(line_split) do
 			if line_num == current_line then
 ---------- Require statements -----------
@@ -138,7 +137,6 @@ local function go_to_definition(
           end 
 				end
 				if # #|name .. "_positions"|# > 0 then
-					logger.log(#[name]#)
 					local s_char = #|name .. "_positions"|#[closest_line]
 					local e_char = #|name .. "_positions"|#[closest_line] + #identifier
 					## push_definition(current_uri, closest_line , s_char, closest_line, e_char)
@@ -161,10 +159,10 @@ local function go_to_definition(
 			end
 
 			local word = line:sub(start_idx, end_idx)
-			logger.log(word)
 
 			for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
-				if not keywords[identifier] and identifier == word then
+				if keywords:peek(identifier) == nilptr and identifier == word then
+
 ------- Local and Global Variables ------
 					-- TODO: Doesn't match correctly
 					local local_repeat = true
@@ -173,7 +171,7 @@ local function go_to_definition(
 
 					-- if global is found from files in memory
 					for uri, document in pairs(documents) do 
-						local global_match = "global[^=]+%" .. #[just_selection]#(identifier)
+						local global_match = "global%s*[^=]+" .. #[just_selection]#(identifier)
           	if document:match(global_match) then
 							local global_find_line: integer
 							for l in document:gmatch(line_split) do
@@ -189,14 +187,16 @@ local function go_to_definition(
 					end
 
 					-- Search for global identifier using git
-					local global_git_find = io.popen("git grep --no-index -En 'global[^=]+\\b" .. identifier .. "\\b' $(git rev-parse --show-toplevel)"):read("a")					if global_git_find ~= "" then
-						local find_matched, find_seq = global_git_find:match("(.+):(%d+):.*")
+					local global_git_find = io.popen("git grep --no-index -EPn 'global[^=]+\\b" .. identifier .. "\\b(?!.*end)' $(git rev-parse --show-toplevel)"):read("a")
+					if global_git_find ~= "" then
+						local find_matched, find_seq = global_git_find:match("(.-%.nelua):(%d+):.*")
 						if find_matched then
 							local global_path = find_seq[1]
+							logger.log(global_path)
 							local global_find_line = tointeger(find_seq[2]) - 1
 							local global_find_file = io.open(global_path)
 							for l in global_find_file:lines() do
-								if l:match("global[^=]+%f[%w_]" .. #[just_selection]#(identifier)) then
+								if l:match("global[^=]+" .. #[just_selection]#(identifier)) then
 									local find_start, find_end = l:find("%f[%w_]" .. identifier .. "%f[^%w_]")
 									find_start = find_start - 1
 									local uri = file_scheme  .. root_uri .. "/" .. global_path
@@ -211,21 +211,25 @@ local function go_to_definition(
 						goto definition_found
 					end
 -----------------------------------------
+
 ------------- For Variables -------------
 					local stepped_for_search = "for%s*[^=]+" .. #[just_selection]#(identifier) .. "%s*="
 					## closest_goto("stepped_for", stepped_for_search, true)
 					local exclusive_for_search = "for.-%" .. #[just_selection]#(identifier) .. "%s*in"
 					## closest_goto("exclusive_for", exclusive_for_search, true)
 -----------------------------------------
+
 -------------- Goto Labels --------------
 					local goto_search = "::" .. #[just_selection]#(identifier) .. "::"
 					## closest_goto("goto", goto_search, true)
 -----------------------------------------
+
 ---------------- Params -----------------
 					-- TODO: Figure out proper regex for params
 					-- local param_search = "function%.-([%w_]+%.:)?[%w_]+%s*%(.-" .. #[just_selection]#(identifier) .. "%s*:"
 					-- ## closest_goto("param", param_search, true)
 -----------------------------------------
+
 				end
 			end
 		end

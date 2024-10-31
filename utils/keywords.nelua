@@ -9,6 +9,7 @@ keywords["nil"] = true
 keywords["true"] = true
 keywords["false"] = true
 keywords["for"] = true
+keywords["if"] = true
 keywords["while"] = true
 keywords["do"] = true
 keywords["end"] = true

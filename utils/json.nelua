@@ -15,8 +15,8 @@ function json.decode(content: string): (*cJSON, string)
 end
 
 function json.encode(obj: *cJSON)
-  local json = cJSON_PrintUnformatted(obj)
-  local result = "Content-Length: " .. #json .. "\r\n\r\n" .. tostring(json)
+  local content = cJSON_PrintUnformatted(obj)
+  local result = "Content-Length: " .. #content .. "\r\n\r\n" .. tostring(content)
 
   return result
 end

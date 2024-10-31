@@ -67,9 +67,23 @@ end
 local function diagnostic(current_file: string, current_file_path: string, current_uri: string, root_uri: string): boolean
 	local err: boolean = true
 
+	local add_paths = "./?.nelua;./?/init.nelua;/usr/local/lib/nelua/lib/?.nelua;/usr/local/lib/nelua/lib/?/init.nelua;"
+	local current_file_dir: string
+
+	local current_file_matched, current_file_seq = current_file_path:match("(.+/).+nelua")
+	if current_file_matched then
+		current_file_dir = root_uri .. "/" .. current_file_seq[1]
+	else
+		current_file_dir = root_uri
+	end
+	local add_file_path = root_uri .. "/?.nelua"
+	local add_init_path = root_uri .. "/?/init.nelua"
+	add_paths = add_paths .. add_file_path .. ";" .. add_init_path
+
 
 	local tmp_file_name = create_tmp_file(current_file_path, current_file)
-	local analysis = io.popen("nelua -a " .. tmp_file_name .. " 2>&1"):read("a")
+	local analysis = io.popen("(cd " .. current_file_dir .. "; cat " .. tmp_file_name .. " | nelua --path '" .. add_paths .. "' -a -) 2>&1"):read("a")
+	logger.log(analysis)
 	os.remove(tmp_file_name)
 
 	if analysis:match(":%s*error:") then
