@@ -4,7 +4,6 @@ local keywords: hashmap(string, boolean)
 keywords["local"] = true
 keywords["global"] = true
 keywords["function"] = true
-keywords["require"] = true
 keywords["nil"] = true
 keywords["true"] = true
 keywords["false"] = true

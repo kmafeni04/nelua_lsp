@@ -91,6 +91,7 @@ while true do
 			server.hover(
 				documents,
 				request_id,
+				root_uri,
 				current_uri,
 				current_file_path,
 				current_file,

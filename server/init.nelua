@@ -41,6 +41,7 @@ end
 function server.hover(
 	documents: hashmap(string, string),
 	request_id: integer,
+	root_uri: string,
 	current_uri: string,
 	current_file_path: string,
 	current_file: string,
@@ -51,6 +52,7 @@ function server.hover(
 	hover(
 		documents,
 		request_id,
+		root_uri,
 		current_uri,
 		current_file_path,
 		current_file,

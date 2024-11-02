@@ -9,6 +9,7 @@ local keywords = require 'utils.keywords'
 local function hover(
 	documents: hashmap(string, string),
 	request_id: integer,
+	root_uri: string,
 	current_uri: string,
 	current_file_path: string,
 	current_file: string,
@@ -27,7 +28,7 @@ local function hover(
 
 	local content: string
 
-	local line_num = 0
+	local line_num: integer
 	for line in current_file:gmatch("[^\n]-\n") do
 		if line_num == current_line then
 			local identifier_find_start: integer
@@ -39,7 +40,7 @@ local function hover(
 	        local identifier_end = identifier_start + #identifier_seq[1] - 1  
 
 					if current_char >= identifier_start and current_char <= identifier_end then
-						local block = analyze_ast(current_file, current_file_path, identifier)
+						local block = analyze_ast(current_file, current_file_path, root_uri, identifier)
 						if block.attr["type"] ~= "" then
 							content = identifier .. "\n\n**Type**:\n```nelua\n" .. block.attr["type"] .. "\n```"
 						end
