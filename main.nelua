@@ -9,6 +9,8 @@ require 'utils.json'
 require 'utils.response'
 require 'utils.logger'
 
+local tokenize_file = require 'utils.tokenize_file'
+
 logger.init()
 
 local stdin: stringbuilder
@@ -79,6 +81,16 @@ while true do
 
 		if request_method == "textDocument/didOpen" then
 			current_file = server.did_open(current_file_path)
+			local tokens  = tokenize_file(current_file)
+			for i,v  in ipairs(tokens) do
+      	if v.type ~= "whitespace" then
+					logger.log("type: " .. v.type)
+					logger.log("value: '" .. v.value .. "'")
+					logger.log("row: " .. v.row)
+					logger.log("start: " .. v.start)
+					logger.log("end: " .. v.endd)
+				end
+      end
 			documents[current_uri] = current_file
 
 			parse_err = server.diagnostic(current_file, current_file_path, current_uri, root_uri)

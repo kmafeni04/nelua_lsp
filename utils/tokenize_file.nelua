@@ -1,0 +1,77 @@
+require 'sequence'
+require 'io'
+
+local Token = @record{
+  type: string,
+  value: string,
+  row: integer,
+  start: integer,
+  endd: integer
+}
+local function tokenize_file(current_file: string)
+    local tokens: sequence(Token)
+    local row, col = 1, 1
+
+    ## local function get_token(match)
+      local token = ""
+      while i <= #content and content:sub(i, i):match(#[match]#) do
+          token = token .. content:sub(i, i)
+          i = i + 1
+      end
+      i = i - 1
+    ## end
+
+    ## local function add_token(token_type, value)
+        tokens:push({
+            type = #[token_type]#,
+            value = #[value]#,
+            row = row,
+            start = col,
+            endd = col + # #[value]# - 1
+        })
+        for i = 1, # #[value]# do
+            if #[value]#:sub(i, i) == "\n" then
+                row = row + 1
+                col = 1
+            else
+                col = col + 1
+            end
+        end
+    ## end
+
+    local content = current_file
+
+    local i = 1
+    while i <= #content do
+        local char = content:sub(i, i)
+        if char:match("%s") then
+            ## get_token("%s")
+            ## add_token("whitespace", token)
+        elseif char:match("%a") then
+            ## get_token("[%w_]")
+            ## add_token("identifier", token)
+        elseif char:match("%d") then
+            ## get_token("%d")
+            ## add_token("number", token)
+        elseif char:match("-") and content:sub(i + 1, i + 1) == "-"  then
+            ## get_token("[^\r\n]")
+            ## add_token("comment", token)
+        elseif char == '"' or char == "'" then
+            local token = char
+            i = i + 1
+            while i <= #content and content:sub(i, i) ~= char do
+                token = token .. content:sub(i, i)
+                i = i + 1
+            end
+            token = token .. char
+            ## add_token("string", token)
+        else
+            ## add_token("symbol", char)
+        end
+        i = i + 1
+    end
+
+    return tokens
+end
+
+return tokenize_file
