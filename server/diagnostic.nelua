@@ -27,8 +27,8 @@ local function create_diagnostic(analysis: string, analysis_match: string, sever
 	for line in analysis:gmatch("([^\r\n]+)") do
 		local analysis_matched, analysis_seq = line:match(analysis_match)
 		if analysis_matched then
-			local analysis_search_start = analysis:find(analysis_seq[4])
-			logger.log(analysis_search_start)
+			local analysis_search_reg = analysis_seq[4]:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")
+			local analysis_search_start = analysis:find(analysis_search_reg)
 			local error_len_matched, error_len_seq = analysis:match("%f[%^]%^~+", analysis_search_start) 
 			local error_len = #error_len_seq[1]
 			if error_len == 0 then
@@ -80,7 +80,6 @@ local function diagnostic(current_file: string, current_file_path: string, curre
 	local escaped_file = current_file:gsub("([$`\"\\])", "\\%1")
   local command = create_compiler_cmd(current_file, current_file_path, root_uri, "-a")
 	local analysis = io.popen(command):read("a")
-	logger.log(analysis)
 
 	if analysis:match(":%s*error:") then
 		local diag: Diagnostic = create_diagnostic(analysis, "(.-):(%d+):(%d+):%s+error:%s+([^\r\n]+)", Severity.Error)

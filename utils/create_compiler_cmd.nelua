@@ -1,3 +1,5 @@
+require 'string'
+
 local function create_compiler_cmd(current_file: string, current_file_path: string, root_uri: string, cmd: string): string
 	local add_paths: string = #[require('nelua.configer').get_default().path]# .. ";"
 	local current_file_dir: string
