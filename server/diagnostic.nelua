@@ -41,6 +41,13 @@ local function create_diagnostic(analysis: string, analysis_match: string, sever
 			diagnostic.s_char = tointeger(analysis_seq[3]) - 1
 			diagnostic.e_char = diagnostic.s_char + error_len
 			diagnostic.msg = analysis_seq[4]
+
+			if diagnostic.s_char < 0 then
+				diagnostic.line = diagnostic.line - 1
+				diagnostic.s_char = 0
+				diagnostic.e_char = 1
+			end
+
 			break
 		end
 

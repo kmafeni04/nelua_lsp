@@ -192,7 +192,6 @@ local function go_to_definition(
 						local find_matched, find_seq = global_git_find:match("(.-%.nelua):(%d+):.*")
 						if find_matched then
 							local global_path = find_seq[1]
-							logger.log(global_path)
 							local global_find_line = tointeger(find_seq[2]) - 1
 							local global_find_file = io.open(global_path)
 							for l in global_find_file:lines() do
