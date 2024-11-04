@@ -15,7 +15,8 @@ local stdin: stringbuilder
 local documents: hashmap(string, string)
 local current_file: string
 local current_uri: string
-local root_uri: string = io.popen("git rev-parse --show-toplevel"):read("l")
+local root_uri: string = io.popen("git rev-parse --show-toplevel 2>&1"):read("l")
+local in_git_repo: boolean = true
 local parse_err: boolean
 
 while true do
@@ -57,9 +58,20 @@ while true do
 		if cJSON_IsNumber(current_char_obj) == 1 then
 			current_char = current_char_obj.valueint
 		end
+
+		local root_uri_not_find = root_uri:match("fatal: not a git repository %(or any of the parent directories%): %.git")
+		if root_uri_not_find then
+			in_git_repo = false
+		end
+
+		if not in_git_repo then
+			root_uri = current_uri:sub(#"file:///"):gsub("/[^/]+%.nelua","")
+		end
+
 		local current_file_path = current_uri:sub(#("file://") + #root_uri + 2)
 
 		logger.log("Method: " .. request_method)
+
 
 		if request_method == "initialize" then
 			server.initialize(request_id)
