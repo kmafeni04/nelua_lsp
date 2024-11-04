@@ -36,3 +36,9 @@ To use the current iteration, make sure you are in a local git repo
 ```sh
   nelua -L /path/to/nelua_lsp /path/to/nelua_lsp/main.nelua
 ```
+
+For faster start times, consider using a faster compiler:
+
+```sh
+  nelua -L /path/to/nelua_lsp --cc tcc /path/to/nelua_lsp/main.nelua 
+```
