@@ -1620,7 +1620,7 @@ Scan span `s` for value `x` and returns its respective index. In case `x` is not
 	local seen_identifiers: hashmap(string, boolean)
 	local unique_identifiers: sequence(string)
 	for _, identifier  in ipairs(identifiers) do
-		if not seen_identifiers[identifier] and not keywords[identifier] then
+		if seen_identifiers:peek(identifier) == nilptr and keywords:peek(identifier) == nilptr then
 			unique_identifiers:push(identifier)
 			seen_identifiers[identifier] = true
 		end
