@@ -1,13 +1,15 @@
 require 'io'
 require 'math'
+require 'os'
 
 require 'utils.logger'
 require 'utils.response'
 
 local keywords = require 'utils.keywords'
+local tokenize_file = require 'utils.tokenize_file'
 
 local function go_to_definition(
-	root_uri: string,
+	root_path: string,
 	request_params: *cJSON,
 	request_id: integer,
 	documents: hashmap(string, string),
@@ -26,7 +28,6 @@ local function go_to_definition(
 		goto definition_found
 	end
 
-	local go_to_definition: string
 	local go_to_uris: sequence(string)
 	local go_to_s_lines: sequence(integer)
 	local go_to_s_chars: sequence(integer)
@@ -34,31 +35,51 @@ local function go_to_definition(
 	local go_to_e_chars: sequence(integer)
 	local file_scheme: string = "file://" 
 
-	local line_split = "([^\n]-)\n"
-	local line_num: integer
-	for line in current_file:gmatch(line_split) do
-			if line_num == current_line then
----------- Require statements -----------
-			if line:match("%f[%w_]require%f[^%w_]") then
-				for require_statement, path_seq in line:gmatch("require%s*%(?%[?['\"%[]([%w_%.]+)['\"%]]%]?%s*%)?") do 
-					local path_search_start = line:find(require_statement, 1, true)
-					local path_start = line:find(path_seq[0], path_search_start)
-	        local path_end = path_start + #path_seq[0] - 1 
-					if current_char >= path_start - 1 and current_char <= path_end - 1 then
-						local git_paths <close> = io.popen("git ls-files && git ls-files --others")
-						local path = line:sub(path_start, path_end):gsub("%.","/")
-						local current_path = current_uri:sub(#file_scheme + #root_uri + #"/" + 1)
+  local tokens = tokenize_file(current_file)
+  for i, token in ipairs(tokens) do
+    local in_token = current_char >= token.s_char - 1 and current_char <= token.e_char - 1 
+		local in_line = current_line >= token.s_line - 1 and current_line <= token.e_line - 1 
+    if in_line and in_token then
+        if token.type == "string" then
+--------------------- Require Statements ----------------------
+            if tokens[i - 1].value == "require" or tokens[i - 1].value == "(" and tokens[i - 2].value == "require" then
+							local git_paths <close> = io.popen("git ls-files && git ls-files --others")
+							local path = token.value:sub(1, #token.value - 1):sub(2):gsub("%[",""):gsub("%]",""):gsub("%s",""):gsub("%.","/")
+							local current_path = current_uri:sub(#file_scheme + #root_path + #"/" + 1)
 
-						local same_dir = path:match("^/.+$")
-						if same_dir then
-							local child, child_seq = current_path:match("/.+nelua")
-							if child then
-								local parent_dir = current_path:sub(1, #current_path - #child_seq[1])
-								local regular_path = parent_dir .. path .. ".nelua"
-								local init_path = parent_dir .. path .. "/init.nelua"
+							local same_dir = path:match("^/.+$")
+							if same_dir then
+								local child, child_seq = current_path:match("/.+nelua")
+								if child then
+									local parent_dir = current_path:sub(1, #current_path - #child_seq[1])
+									local regular_path = parent_dir .. path .. ".nelua"
+									local init_path = parent_dir .. path .. "/init.nelua"
+									for file in git_paths:lines() do
+										if file == regular_path then
+											local go_to_uri = file_scheme  .. root_path .. "/" .. regular_path
+											go_to_uris:push(go_to_uri)
+											go_to_s_lines:push(0)
+											go_to_s_chars:push(0)
+											go_to_e_lines:push(0)
+											go_to_e_chars:push(0)
+											goto definition_found
+										elseif file == init_path then
+											local go_to_uri = file_scheme  .. root_path .. "/" .. init_path
+											go_to_uris:push(go_to_uri)
+											go_to_s_lines:push(0)
+											go_to_s_chars:push(0)
+											go_to_e_lines:push(0)
+											go_to_e_chars:push(0)
+											goto definition_found
+										end
+									end
+								end
+							else
 								for file in git_paths:lines() do
+									local regular_path = path .. ".nelua"
+									local init_path = path .. "/init.nelua"
 									if file == regular_path then
-										local go_to_uri = file_scheme  .. root_uri .. "/" .. regular_path
+										local go_to_uri = file_scheme  .. root_path .. "/" .. regular_path
 										go_to_uris:push(go_to_uri)
 										go_to_s_lines:push(0)
 										go_to_s_chars:push(0)
@@ -66,7 +87,7 @@ local function go_to_definition(
 										go_to_e_chars:push(0)
 										goto definition_found
 									elseif file == init_path then
-										local go_to_uri = file_scheme  .. root_uri .. "/" .. init_path
+										local go_to_uri = file_scheme  .. root_path .. "/" .. init_path
 										go_to_uris:push(go_to_uri)
 										go_to_s_lines:push(0)
 										go_to_s_chars:push(0)
@@ -76,165 +97,213 @@ local function go_to_definition(
 									end
 								end
 							end
-						else
-							for file in git_paths:lines() do
-								local regular_path = path .. ".nelua"
-								local init_path = path .. "/init.nelua"
-								if file == regular_path then
-									local go_to_uri = file_scheme  .. root_uri .. "/" .. regular_path
-									go_to_uris:push(go_to_uri)
-									go_to_s_lines:push(0)
-									go_to_s_chars:push(0)
-									go_to_e_lines:push(0)
-									go_to_e_chars:push(0)
-									goto definition_found
-								elseif file == init_path then
-									local go_to_uri = file_scheme  .. root_uri .. "/" .. init_path
-									go_to_uris:push(go_to_uri)
-									go_to_s_lines:push(0)
-									go_to_s_chars:push(0)
-									go_to_e_lines:push(0)
-									go_to_e_chars:push(0)
-									goto definition_found
-								end
-							end
-						end
-					end
-				end
-			end
------------------------------------------
+            end
+---------------------------------------------------------------
+          end
+      end
+  end
+
+	-- local line_split = "([^\n]-)\n"
+	-- local line_num: integer
+-- 	for line in current_file:gmatch(line_split) do
+-- 			if line_num == current_line then
+-- ---------- Require statements -----------
+-- 			if line:match("%f[%w_]require%f[^%w_]") then
+-- 				for require_statement, path_seq in line:gmatch("require%s*%(?%[?['\"%[]([%w_%.]+)['\"%]]%]?%s*%)?") do 
+-- 					local path_search_start = line:find(require_statement, 1, true)
+-- 					local path_start = line:find(path_seq[0], path_search_start)
+-- 	        local path_end = path_start + #path_seq[0] - 1 
+-- 					if current_char >= path_start - 1 and current_char <= path_end - 1 then
+-- 						local git_paths <close> = io.popen("git ls-files && git ls-files --others")
+-- 						local path = line:sub(path_start, path_end):gsub("%.","/")
+-- 						local current_path = current_uri:sub(#file_scheme + #root_uri + #"/" + 1)
+
+-- 						local same_dir = path:match("^/.+$")
+-- 						if same_dir then
+-- 							local child, child_seq = current_path:match("/.+nelua")
+-- 							if child then
+-- 								local parent_dir = current_path:sub(1, #current_path - #child_seq[1])
+-- 								local regular_path = parent_dir .. path .. ".nelua"
+-- 								local init_path = parent_dir .. path .. "/init.nelua"
+-- 								for file in git_paths:lines() do
+-- 									if file == regular_path then
+-- 										local go_to_uri = file_scheme  .. root_uri .. "/" .. regular_path
+-- 										go_to_uris:push(go_to_uri)
+-- 										go_to_s_lines:push(0)
+-- 										go_to_s_chars:push(0)
+-- 										go_to_e_lines:push(0)
+-- 										go_to_e_chars:push(0)
+-- 										goto definition_found
+-- 									elseif file == init_path then
+-- 										local go_to_uri = file_scheme  .. root_uri .. "/" .. init_path
+-- 										go_to_uris:push(go_to_uri)
+-- 										go_to_s_lines:push(0)
+-- 										go_to_s_chars:push(0)
+-- 										go_to_e_lines:push(0)
+-- 										go_to_e_chars:push(0)
+-- 										goto definition_found
+-- 									end
+-- 								end
+-- 							end
+-- 						else
+-- 							for file in git_paths:lines() do
+-- 								local regular_path = path .. ".nelua"
+-- 								local init_path = path .. "/init.nelua"
+-- 								if file == regular_path then
+-- 									local go_to_uri = file_scheme  .. root_uri .. "/" .. regular_path
+-- 									go_to_uris:push(go_to_uri)
+-- 									go_to_s_lines:push(0)
+-- 									go_to_s_chars:push(0)
+-- 									go_to_e_lines:push(0)
+-- 									go_to_e_chars:push(0)
+-- 									goto definition_found
+-- 								elseif file == init_path then
+-- 									local go_to_uri = file_scheme  .. root_uri .. "/" .. init_path
+-- 									go_to_uris:push(go_to_uri)
+-- 									go_to_s_lines:push(0)
+-- 									go_to_s_chars:push(0)
+-- 									go_to_e_lines:push(0)
+-- 									go_to_e_chars:push(0)
+-- 									goto definition_found
+-- 								end
+-- 							end
+-- 						end
+-- 					end
+-- 				end
+-- 			end
+-- -----------------------------------------
 				
-			## local function just_selection(selection)
-      	in "%f[%w_]" .. #[selection]# .. "%f[^%w_]"
-      ## end
-			## local function push_definition(uri, s_line, s_char, e_line, e_char)
-				go_to_uris:push(#[uri]#)
-				go_to_s_lines:push(#[s_line]#)
-				go_to_s_chars:push(#[s_char]#)
-				go_to_e_lines:push(#[e_line]#)
-				go_to_e_chars:push(#[e_char]#)
-			## end
+-- 			## local function just_selection(selection)
+--       	in "%f[%w_]" .. #[selection]# .. "%f[^%w_]"
+--       ## end
+-- 			## local function push_definition(uri, s_line, s_char, e_line, e_char)
+-- 				go_to_uris:push(#[uri]#)
+-- 				go_to_s_lines:push(#[s_line]#)
+-- 				go_to_s_chars:push(#[s_char]#)
+-- 				go_to_e_lines:push(#[e_line]#)
+-- 				go_to_e_chars:push(#[e_char]#)
+-- 			## end
 
-			## local function closest_goto(name, search, togo)
-				local #|name .. "_line_num"|#: integer
-				local #|name .. "_positions"|#: hashmap(integer, integer)
+-- 			## local function closest_goto(name, search, togo)
+-- 				local #|name .. "_line_num"|#: integer
+-- 				local #|name .. "_positions"|#: hashmap(integer, integer)
 
-				for l in current_file:gmatch(line_split) do
-					if l:match(#[search]#) then
-						local #|name .. "_find_char"|# = l:find(identifier) - 1
-						#|name .. "_positions"|#[#|name .. "_line_num"|#] = #|name .. "_find_char"|#
-					end
-					#|name .. "_line_num"|# = #|name .. "_line_num"|# + 1
-				end
+-- 				for l in current_file:gmatch(line_split) do
+-- 					if l:match(#[search]#) then
+-- 						local #|name .. "_find_char"|# = l:find(identifier) - 1
+-- 						#|name .. "_positions"|#[#|name .. "_line_num"|#] = #|name .. "_find_char"|#
+-- 					end
+-- 					#|name .. "_line_num"|# = #|name .. "_line_num"|# + 1
+-- 				end
 
-				local closest_line: integer
-				local min_diff = math.huge
-				for line, char in pairs(#|name .. "_positions"|#) do
-	        local diff = current_line - line
-					if diff < min_diff then
-          	min_diff = diff
-						closest_line = line
-          end 
-				end
-				if # #|name .. "_positions"|# > 0 then
-					local s_char = #|name .. "_positions"|#[closest_line]
-					local e_char = #|name .. "_positions"|#[closest_line] + #identifier
-					## push_definition(current_uri, closest_line , s_char, closest_line, e_char)
-					## if no_repeat then
-					## end
-					## if togo then
-						goto definition_found
-					## else
-						#|name .. "_repeat"|# = false
-					## end
-				end
-			## end
-			local start_idx, end_idx = current_char + 1, current_char + 1
+-- 				local closest_line: integer
+-- 				local min_diff = math.huge
+-- 				for line, char in pairs(#|name .. "_positions"|#) do
+-- 	        local diff = current_line - line
+-- 					if diff < min_diff then
+--           	min_diff = diff
+-- 						closest_line = line
+--           end 
+-- 				end
+-- 				if # #|name .. "_positions"|# > 0 then
+-- 					local s_char = #|name .. "_positions"|#[closest_line]
+-- 					local e_char = #|name .. "_positions"|#[closest_line] + #identifier
+-- 					## push_definition(current_uri, closest_line , s_char, closest_line, e_char)
+-- 					## if no_repeat then
+-- 					## end
+-- 					## if togo then
+-- 						goto definition_found
+-- 					## else
+-- 						#|name .. "_repeat"|# = false
+-- 					## end
+-- 				end
+-- 			## end
+-- 			local start_idx, end_idx = current_char + 1, current_char + 1
 
-			while start_idx > 1 and line:sub(start_idx - 1, start_idx - 1):match(#[just_selection]#("[%w_]+")) do
-				start_idx = start_idx - 1
-			end
-			while end_idx > 1 and line:sub(end_idx + 1, end_idx + 1):match(#[just_selection]#("[%w_]+")) do
-				end_idx = end_idx + 1
-			end
+-- 			while start_idx > 1 and line:sub(start_idx - 1, start_idx - 1):match(#[just_selection]#("[%w_]+")) do
+-- 				start_idx = start_idx - 1
+-- 			end
+-- 			while end_idx > 1 and line:sub(end_idx + 1, end_idx + 1):match(#[just_selection]#("[%w_]+")) do
+-- 				end_idx = end_idx + 1
+-- 			end
 
-			local word = line:sub(start_idx, end_idx)
+-- 			local word = line:sub(start_idx, end_idx)
 
-			for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
-				if keywords:peek(identifier) == nilptr and identifier == word then
+-- 			for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
+-- 				if keywords:peek(identifier) == nilptr and identifier == word then
 
-------- Local and Global Variables ------
-					-- TODO: Doesn't match correctly
-					local local_repeat = true
-					local local_search = "local%s*[^=]+" .. #[just_selection]#(identifier)
-					## closest_goto("local", local_search)
+-- ------- Local and Global Variables ------
+-- 					-- TODO: Doesn't match correctly
+-- 					local local_repeat = true
+-- 					local local_search = "local%s*[^=]+" .. #[just_selection]#(identifier)
+-- 					## closest_goto("local", local_search)
 
-					-- if global is found from files in memory
-					for uri, document in pairs(documents) do 
-						local global_match = "global%s*[^=]+" .. #[just_selection]#(identifier)
-          	if document:match(global_match) then
-							local global_find_line: integer
-							for l in document:gmatch(line_split) do
-								if l:match(global_match) then
-									local find_start, find_end = l:find(identifier)
-									find_start = find_start - 1
-									## push_definition(uri, global_find_line , find_start, global_find_line, find_end)
-									goto definition_found
-								end
-								global_find_line = global_find_line + 1
-							end
-						end
-					end
+-- 					-- if global is found from files in memory
+-- 					for uri, document in pairs(documents) do 
+-- 						local global_match = "global%s*[^=]+" .. #[just_selection]#(identifier)
+--           	if document:match(global_match) then
+-- 							local global_find_line: integer
+-- 							for l in document:gmatch(line_split) do
+-- 								if l:match(global_match) then
+-- 									local find_start, find_end = l:find(identifier)
+-- 									find_start = find_start - 1
+-- 									## push_definition(uri, global_find_line , find_start, global_find_line, find_end)
+-- 									goto definition_found
+-- 								end
+-- 								global_find_line = global_find_line + 1
+-- 							end
+-- 						end
+-- 					end
 
-					-- Search for global identifier using git
-					local global_git_find = io.popen("git grep --no-index -EPn 'global[^=]+\\b" .. identifier .. "\\b(?!.*end)' $(git rev-parse --show-toplevel)"):read("a")
-					if global_git_find ~= "" then
-						local find_matched, find_seq = global_git_find:match("(.-%.nelua):(%d+):.*")
-						if find_matched then
-							local global_path = find_seq[1]
-							local global_find_line = tointeger(find_seq[2]) - 1
-							local global_find_file = io.open(global_path)
-							for l in global_find_file:lines() do
-								if l:match("global[^=]+" .. #[just_selection]#(identifier)) then
-									local find_start, find_end = l:find("%f[%w_]" .. identifier .. "%f[^%w_]")
-									find_start = find_start - 1
-									local uri = file_scheme  .. root_uri .. "/" .. global_path
-									## push_definition(uri, global_find_line , find_start, global_find_line, find_end)
-								end
-							end
-							goto definition_found
-						end
-					end
+-- 					-- Search for global identifier using git
+-- 					local global_git_find = io.popen("git grep --no-index -EPn 'global[^=]+\\b" .. identifier .. "\\b(?!.*end)' $(git rev-parse --show-toplevel)"):read("a")
+-- 					if global_git_find ~= "" then
+-- 						local find_matched, find_seq = global_git_find:match("(.-%.nelua):(%d+):.*")
+-- 						if find_matched then
+-- 							local global_path = find_seq[1]
+-- 							local global_find_line = tointeger(find_seq[2]) - 1
+-- 							local global_find_file = io.open(global_path)
+-- 							for l in global_find_file:lines() do
+-- 								if l:match("global[^=]+" .. #[just_selection]#(identifier)) then
+-- 									local find_start, find_end = l:find("%f[%w_]" .. identifier .. "%f[^%w_]")
+-- 									find_start = find_start - 1
+-- 									local uri = file_scheme  .. root_uri .. "/" .. global_path
+-- 									## push_definition(uri, global_find_line , find_start, global_find_line, find_end)
+-- 								end
+-- 							end
+-- 							goto definition_found
+-- 						end
+-- 					end
 
-					if not local_repeat then
-						goto definition_found
-					end
------------------------------------------
+-- 					if not local_repeat then
+-- 						goto definition_found
+-- 					end
+-- -----------------------------------------
 
-------------- For Variables -------------
-					local stepped_for_search = "for%s*[^=]+" .. #[just_selection]#(identifier) .. "%s*="
-					## closest_goto("stepped_for", stepped_for_search, true)
-					local exclusive_for_search = "for.-%" .. #[just_selection]#(identifier) .. "%s*in"
-					## closest_goto("exclusive_for", exclusive_for_search, true)
------------------------------------------
+-- ------------- For Variables -------------
+-- 					local stepped_for_search = "for%s*[^=]+" .. #[just_selection]#(identifier) .. "%s*="
+-- 					## closest_goto("stepped_for", stepped_for_search, true)
+-- 					local exclusive_for_search = "for.-%" .. #[just_selection]#(identifier) .. "%s*in"
+-- 					## closest_goto("exclusive_for", exclusive_for_search, true)
+-- -----------------------------------------
 
--------------- Goto Labels --------------
-					local goto_search = "::" .. #[just_selection]#(identifier) .. "::"
-					## closest_goto("goto", goto_search, true)
------------------------------------------
+-- -------------- Goto Labels --------------
+-- 					local goto_search = "::" .. #[just_selection]#(identifier) .. "::"
+-- 					## closest_goto("goto", goto_search, true)
+-- -----------------------------------------
 
----------------- Params -----------------
-					-- TODO: Figure out proper regex for params
-					-- local param_search = "function%.-([%w_]+%.:)?[%w_]+%s*%(.-" .. #[just_selection]#(identifier) .. "%s*:"
-					-- ## closest_goto("param", param_search, true)
------------------------------------------
+-- ---------------- Params -----------------
+-- 					-- TODO: Figure out proper regex for params
+-- 					-- local param_search = "function%.-([%w_]+%.:)?[%w_]+%s*%(.-" .. #[just_selection]#(identifier) .. "%s*:"
+-- 					-- ## closest_goto("param", param_search, true)
+-- -----------------------------------------
 
-				end
-			end
-		end
+-- 				end
+-- 			end
+-- 		end
 
-		line_num = line_num + 1
-	end
+-- 		line_num = line_num + 1
+-- 	end
 
 	
 	::definition_found::

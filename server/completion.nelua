@@ -1,8 +1,10 @@
+-- TODO: Use tokenizer and ast analyzer to provide more customized completions
 require 'io'
 
 require 'utils.response'
 
 local keywords = require 'utils.keywords'
+local tokenize_file = require 'utils.tokenize_file'
 
 local CompletionItemKind = @enum{
 	Text = 1,
@@ -47,7 +49,6 @@ local function create_completion(doc: string, label: string, insert_t: string, i
   cJSON_AddItemToObject(obj, "documentation", cJSON_CreateString(doc))
   cJSON_AddItemToObject(obj, "label", cJSON_CreateString(label))
   cJSON_AddItemToObject(obj, "insertText", cJSON_CreateString(insert_t))
-  cJSON_AddItemToObject(obj, "insertTextFormat", cJSON_CreateNumber(insert_t_f))
   cJSON_AddItemToObject(obj, "insertTextFormat", cJSON_CreateNumber(insert_t_f))
   cJSON_AddItemToObject(obj, "kind", cJSON_CreateNumber(comp_kind))
   return obj
@@ -1612,8 +1613,16 @@ Scan span `s` for value `x` and returns its respective index. In case `x` is not
 ------------ Generic Text -------------
 	local identifiers: sequence(string)
 	for _, doc  in pairs(documents) do
-		for identifier in doc:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
-			identifiers:push(identifier)
+		local tokens = tokenize_file(doc)
+		for _, token in ipairs(tokens) do
+			if token.type == "identifier" then
+				identifiers:push(token.value)
+			end
+			if token.type == "string" then
+				for word in token.value:gmatch("[%w_]+") do
+					identifiers:push(word)
+				end
+			end
 		end
   end
 

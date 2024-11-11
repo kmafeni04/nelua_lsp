@@ -19,8 +19,8 @@ function server.did_open(current_file_path: string): string
 	return did_open(current_file_path)
 end
 
-function server.diagnostic(current_file: string, current_file_path: string, current_uri: string, root_uri: string): boolean
-	return diagnostic(current_file, current_file_path, current_uri, root_uri)
+function server.diagnostic(current_file: string, current_file_path: string, current_uri: string, root_path: string): boolean
+	return diagnostic(current_file, current_file_path, current_uri, root_path)
 end
 
 function server.did_change(
@@ -41,7 +41,7 @@ end
 function server.hover(
 	documents: hashmap(string, string),
 	request_id: integer,
-	root_uri: string,
+	root_path: string,
 	current_uri: string,
 	current_file_path: string,
 	current_file: string,
@@ -52,7 +52,7 @@ function server.hover(
 	hover(
 		documents,
 		request_id,
-		root_uri,
+		root_path,
 		current_uri,
 		current_file_path,
 		current_file,
@@ -63,7 +63,7 @@ function server.hover(
 end
 
 function server.go_to_definition(
-	root_uri: string,
+	root_path: string,
 	request_params: *cJSON,
 	request_id: integer,
 	documents: hashmap(string, string),
@@ -74,7 +74,7 @@ function server.go_to_definition(
 	parse_err: boolean
 )
 	go_to_definition(
-		root_uri,
+		root_path,
 		request_params,
 		request_id,
 		documents,

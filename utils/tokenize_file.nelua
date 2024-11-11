@@ -1,72 +1,156 @@
 require 'sequence'
 require 'io'
 
+-- TODO: Finish converting token type to use Line types
+local Line = @record{
+    line_num: integer,
+    s_char: integer,
+    e_char: integer
+}
+
 local Token = @record{
-  type: string,
-  value: string,
-  row: integer,
-  start: integer,
-  endd: integer
+    type: string,
+    value: string,
+    s_line: integer,
+    e_line: integer,
+    s_char: integer,
+    e_char: integer
 }
 local function tokenize_file(current_file: string)
     local tokens: sequence(Token)
-    local row, col = 1, 1
+    local s_line, s_char = 1, 1
 
     ## local function get_token(match)
-      local token = ""
-      while i <= #content and content:sub(i, i):match(#[match]#) do
-          token = token .. content:sub(i, i)
-          i = i + 1
-      end
-      i = i - 1
+        local token = ""
+        while i <= #current_file and current_file:sub(i, i):match(#[match]#) do
+            token = token .. current_file:sub(i, i)
+            i = i + 1
+        end
+        i = i - 1
     ## end
 
-    ## local function add_token(token_type, value)
+    ## local function get_multiline_token(match, ending)
+        local token = ""
+        local e_line = s_line
+        while i <= #current_file 
+            and current_file:sub(i, i):match(#[match]#) 
+            and current_file:sub(i + 1, i + 1):match(#[match]#) 
+        do
+            if current_file:sub(i, i):match("\r?\n") then
+                e_line = e_line + 1
+            end
+            token = token .. current_file:sub(i, i)
+            i = i + 1
+        end
+        -- regular count ends up less than actual line by 1
+        if e_line > s_line then
+            e_line = e_line + 1
+        end
+        token = token .. current_file:sub(i, i)
+        i = i + 2
+        token = token .. #[ending]#
+
+    ## end
+    
+
+    ## local function add_token(token_type, value, e_line)
         tokens:push({
             type = #[token_type]#,
             value = #[value]#,
-            row = row,
-            start = col,
-            endd = col + # #[value]# - 1
+            s_line = s_line,
+            e_line = #[e_line]#,
+            s_char = s_char,
+            e_char = s_char + # #[value]# - 1
         })
+    ## end
+    ## local function advance_token(value)
         for i = 1, # #[value]# do
             if #[value]#:sub(i, i) == "\n" then
-                row = row + 1
-                col = 1
+                s_line = s_line + 1
+                s_char = 1
             else
-                col = col + 1
+                s_char = s_char + 1
             end
         end
     ## end
 
-    local content = current_file
-
     local i = 1
-    while i <= #content do
-        local char = content:sub(i, i)
+    while i <= #current_file do
+        local char = current_file:sub(i, i)
         if char:match("%s") then
             ## get_token("%s")
-            ## add_token("whitespace", token)
+            -- ## add_token("whitespace", token)
+            ## advance_token(token)
         elseif char:match("%a") then
             ## get_token("[%w_]")
-            ## add_token("identifier", token)
+            ## add_token("identifier", token, s_line)
+            ## advance_token(token)
         elseif char:match("%d") then
             ## get_token("%d")
-            ## add_token("number", token)
-        elseif char:match("-") and content:sub(i + 1, i + 1) == "-"  then
+            ## add_token("number", token, s_line)
+            ## advance_token(token)
+        elseif
+            char == "-"
+            and current_file:sub(i + 1, i + 1) == "-"
+            and current_file:sub(i + 2, i + 2) == "["
+            and current_file:sub(i + 3, i + 3) == "["
+        then
+            ## get_multiline_token("[^%]]", "]]")
+            ## add_token("comment", token, e_line)
+            ## advance_token(token)
+        elseif char == "-" and current_file:sub(i + 1, i + 1) == "-"  then
             ## get_token("[^\r\n]")
-            ## add_token("comment", token)
+            ## add_token("comment", token, s_line)
+            ## advance_token(token)
+        elseif char == "[" and current_file:sub(i + 1, i + 1) == "["  then
+            ## get_multiline_token("[^%]]", "]]")
+            ## add_token("string", token, e_line)
+            ## advance_token(token)
+        elseif char == "#" 
+            and current_file:sub(i + 1, i + 1) == "#" 
+            and current_file:sub(i + 2, i + 2) == "[" 
+            and current_file:sub(i + 3, i + 3) == "["  
+        then
+            ## get_multiline_token("[^%]]", "]]")
+            ## add_token("preproc_multiline", token, e_line)
+            ## advance_token(token)
+        elseif char == "#" and current_file:sub(i + 1, i + 1) == "#"  then
+            ## get_token("[^\r\n]")
+            ## add_token("preproc_line", token, s_line)
+            ## advance_token(token)
+        elseif char == "#" and current_file:sub(i + 1, i + 1) == "["  then
+            ## get_multiline_token("[^%]]", "]#")
+            ## add_token("preproc_expr", token, s_line)
+            ## advance_token(token)
+        elseif char == "#" and current_file:sub(i + 1, i + 1) == "|"  then
+            -- Token will immediately match itself unless `i` is incremented by 2
+            i = i + 2
+            ## get_multiline_token("[^|]", "|#")
+            token = "#|" .. token
+            ## add_token("preproc_name", token, s_line)
+            ## advance_token(token)
         elseif char == '"' or char == "'" then
             local token = char
             i = i + 1
-            while i <= #content and content:sub(i, i) ~= char do
-                token = token .. content:sub(i, i)
+            while i <= #current_file do
+                token = token .. current_file:sub(i, i)
+                if current_file:sub(i, i) == "\\" 
+                    and (current_file:sub(i + 1, i + 1) == char or current_file:sub(i + 1, i + 1) == "\\") then
+                    token = token .. current_file:sub(i, i) .. current_file:sub(i + 1, i + 1)
+                    i = i + 2 
+                    goto string_loop
+                end
+                if current_file:sub(i, i) == char then
+                    break
+                end
                 i = i + 1
+                ::string_loop::
             end
-            token = token .. char
-            ## add_token("string", token)
+            ## add_token("string", token, s_line)
+            ## advance_token(token)
         else
-            ## add_token("symbol", char)
+            ## add_token("symbol", char, s_line)
+            ## advance_token(char)
         end
         i = i + 1
     end

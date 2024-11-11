@@ -5,11 +5,12 @@ require 'utils.logger'
 require 'utils.response'
 local analyze_ast = require 'utils.analyze_ast'
 local keywords = require 'utils.keywords'
+local tokenize_file = require 'utils.tokenize_file'
 
 local function hover(
 	documents: hashmap(string, string),
 	request_id: integer,
-	root_uri: string,
+	root_path: string,
 	current_uri: string,
 	current_file_path: string,
 	current_file: string,
@@ -28,29 +29,62 @@ local function hover(
 
 	local content: string
 
-	local line_num: integer
-	for line in current_file:gmatch("[^\n]-\n") do
-		if line_num == current_line then
-			local identifier_find_start: integer
-			for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
-				if keywords:peek(identifier) == nilptr then
-					local identifier_matched, identifier_seq = line:match("%f[%w_]" .. identifier .. "%f[^%w_]")
-					local identifier_start = line:find("%f[%w_]" .. identifier_seq[1] .. "%f[^%w_]", identifier_find_start) - 1
-					identifier_find_start = identifier_start + #identifier
-	        local identifier_end = identifier_start + #identifier_seq[1] - 1  
-
-					if current_char >= identifier_start and current_char <= identifier_end then
-						local block = analyze_ast(current_file, current_file_path, root_uri, identifier)
-						if block.attr["type"] ~= "" then
-							content = identifier .. "\n\n**Type**:\n```nelua\n" .. block.attr["type"] .. "\n```"
-						end
-						goto type_found
-					end
+  local tokens = tokenize_file(current_file)
+  for i, token in ipairs(tokens) do
+    local in_token = current_char >= token.s_char - 1 and current_char <= token.e_char - 1 
+		local in_line = current_line >= token.s_line - 1 and current_line <= token.e_line - 1 
+    if in_line and in_token then
+			if token.type == "identifier" and keywords:peek(token.value) == nilptr  then
+				local identifier = token.value
+				if tokens[i - 1].value == "." and tokens[ i - 2 ].type == "identifier" then
+					identifier = tokens[i - 2].value .. "." .. identifier 
+				-- TODO: Figure out a better implemtation for array index hover
+				elseif tokens[i - 1].value == "." and tokens[ i - 2 ].value == "]" then
+					identifier = tokens[ i - 5 ].value .. "."  .. identifier
+				elseif tokens[i - 1].value == ":" then
+					identifier = "%." .. identifier 
 				end
+				local block = analyze_ast(current_file, current_file_path, root_path, identifier)
+				if block.attr["type"] ~= "" then
+					content = block.attr["name"] .. "\n```nelua\n" .. "Type: " .. block.attr["type"] .. "\n```"
+				end
+				goto type_found
+			elseif token.type == "string" then
+					if token.value:match("%[%[") then
+						token.value = token.value:gsub("%[%[", ""):gsub("%]%]", "")
+					else
+						token.value = token.value:sub(2, #token.value - 2)
+					end
+					if token.value:match("\\") then
+						token.value = token.value:gsub("\\", "", 2)
+					end
+					content = "```nelua\n" .. #token.value .. " bytes\n```"
 			end
 		end
-		line_num = line_num + 1
 	end
+	-- local line_num: integer
+	-- for line in current_file:gmatch("[^\n]-\n") do
+	-- 	if line_num == current_line then
+	-- 		local identifier_find_start: integer
+	-- 		for identifier in line:gmatch("%f[%w_]([%w_]+)%f[^%w_]") do
+	-- 			if keywords:peek(identifier) == nilptr then
+	-- 				local identifier_matched, identifier_seq = line:match("%f[%w_]" .. identifier .. "%f[^%w_]")
+	-- 				local identifier_start = line:find("%f[%w_]" .. identifier_seq[1] .. "%f[^%w_]", identifier_find_start) - 1
+	-- 				identifier_find_start = identifier_start + #identifier
+	--         local identifier_end = identifier_start + #identifier_seq[1] - 1  
+
+	-- 				if current_char >= identifier_start and current_char <= identifier_end then
+	-- 					local block = analyze_ast(current_file, current_file_path, root_uri, identifier)
+	-- 					if block.attr["type"] ~= "" then
+	-- 						content = identifier .. "\n\n**Type**:\n```nelua\n" .. block.attr["type"] .. "\n```"
+	-- 					end
+	-- 					goto type_found
+	-- 				end
+	-- 			end
+			-- end
+	-- 	end
+	-- 	line_num = line_num + 1
+	-- end
 	::type_found::
 	local hover_response = response.hover(request_id, content)
 	io.write(hover_response)

@@ -49,21 +49,44 @@ local function search_ast(blocks: sequence(Block), identifier: string): (Block, 
   local empty_block: Block
   for _, block  in ipairs(blocks) do
     if block.name == "Id" then
-      if $block.attr:peek("name") == identifier then
+      if block.attr:peek("name") ~= nilptr and $block.attr:peek("name") == identifier then
         return block, false
       end
     elseif block.name == "IdDecl" then
-      if $block.attr:peek("name") == identifier then
+      if block.attr:peek("name") ~= nilptr and $block.attr:peek("name") == identifier then
         return block, false
       end
     elseif block.name == "DotIndex" then
-      if ($block.attr:peek("name")):match("%." .. identifier) then
+      if block.attr:peek("name") ~= nilptr and $block.attr:peek("name") == identifier then
         return block, false
-      elseif block.attr["dotfieldname"] == identifier then
+      elseif block.attr:peek("dotfieldname") ~= nilptr and $block.attr:peek("dotfieldname") == (identifier:gsub("[%w_]+%.","")) then
+        if #block.sub_blocks > 0 and block.sub_blocks[1].name == "Id" then
+          block.attr["name"] = block.sub_blocks[1].attr["name"] .. "." .. block.attr["dotfieldname"]
+        else
+          block.attr["name"] = block.attr["dotfieldname"]
+        end
         return block, false
       end
+    -- TODO: Decide the necessity of this
+    -- elseif block.name == "Label" then
+    --   if block.attr:peek("name") ~= nilptr and $block.attr:peek("name") == identifier then
+    --     block.attr["type"] = "label"
+    --     return block, false
+    --   end
+    elseif block.name == "ColonIndex" then
+      if block.attr:peek("name") ~= nilptr and ($block.attr:peek("name")):match(identifier) then
+        return block, false
+      end
+    -- TODO: Decide the necessity of this
+    -- elseif block.name == "Boolean" then
+    --   if block.attr:peek("value") ~= nilptr and $block.attr:peek("value") == identifier then
+    --     block.attr["name"] = block.attr["value"]
+    --     return block, false
+    --   end
     elseif block.name == "CallMethod" then
-      if ($block.attr:peek("calleesym")):match("%." .. identifier) then
+      if block.attr:peek("calleesym") ~= nilptr and ($block.attr:peek("calleesym")):match(identifier) then
+        local identifier_find_start = block.attr["calleesym"]:find(identifier)
+        block.attr["name"] = block.attr["calleesym"]:sub(1, identifier_find_start + #identifier - 2)
         block.attr["type"] = block.attr["calleetype"]
         return block, false
       end
@@ -78,18 +101,21 @@ local function search_ast(blocks: sequence(Block), identifier: string): (Block, 
   return empty_block, true
 end
 
-local function analyze_ast(current_file: string, current_file_path: string, root_uri: string,identifier: string): Block
-  local b: Block
+local function analyze_ast(current_file: string, current_file_path: string, root_path: string,identifier: string): Block
+  local empty_block: Block
   
-  local command = create_compiler_cmd(current_file, current_file_path, root_uri, "--print-analyzed-ast")
+  local command = create_compiler_cmd(current_file, current_file_path, root_path, "--print-analyzed-ast")
   local ast = io.popen(command):read("a")
   local blocks = parse_ast(ast)
   local block, err = search_ast(blocks, identifier)
+
   if err == false then
-    b = block
+    return block
   end
-  return b
+
+  return empty_block
 
 end
 
 return analyze_ast
+

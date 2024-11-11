@@ -17,7 +17,7 @@ local stdin: stringbuilder
 local documents: hashmap(string, string)
 local current_file: string
 local current_uri: string
-local root_uri: string = io.popen("git rev-parse --show-toplevel 2>&1"):read("l")
+local root_path: string = io.popen("git rev-parse --show-toplevel 2>&1"):read("l")
 local in_git_repo: boolean = true
 local parse_err: boolean
 
@@ -61,16 +61,16 @@ while true do
 			current_char = current_char_obj.valueint
 		end
 
-		local root_uri_not_find = root_uri:match("fatal: not a git repository %(or any of the parent directories%): %.git")
-		if root_uri_not_find then
+		local root_path_not_find = root_path:match("fatal: not a git repository %(or any of the parent directories%): %.git")
+		if root_path_not_find then
 			in_git_repo = false
 		end
 
 		if not in_git_repo then
-			root_uri = current_uri:sub(#"file:///"):gsub("/[^/]+%.nelua","")
+			root_path = current_uri:sub(#"file:///"):gsub("/[^/]+%.nelua","")
 		end
 
-		local current_file_path = current_uri:sub(#("file://") + #root_uri + 2)
+		local current_file_path = current_uri:sub(#("file://") + #root_path + 2)
 
 		logger.log("Method: " .. request_method)
 
@@ -82,22 +82,23 @@ while true do
 		if request_method == "textDocument/didOpen" then
 			current_file = server.did_open(current_file_path)
 			local tokens  = tokenize_file(current_file)
-			for i,v  in ipairs(tokens) do
-      	if v.type ~= "whitespace" then
-					logger.log("type: " .. v.type)
-					logger.log("value: '" .. v.value .. "'")
-					logger.log("row: " .. v.row)
-					logger.log("start: " .. v.start)
-					logger.log("end: " .. v.endd)
-				end
-      end
+			-- for i,v  in ipairs(tokens) do
+   --    	if v.type ~= "whitespace" then
+			-- 		logger.log("type: " .. v.type)
+			-- 		logger.log("value: '" .. v.value .. "'")
+			-- 		logger.log("s_line: " .. v.s_line)
+			-- 		logger.log("e_line: " .. v.e_line)
+			-- 		logger.log("s_char: " .. v.s_char)
+			-- 		logger.log("e_char: " .. v.e_char)
+			-- 	end
+   --    end
 			documents[current_uri] = current_file
 
-			parse_err = server.diagnostic(current_file, current_file_path, current_uri, root_uri)
+			parse_err = server.diagnostic(current_file, current_file_path, current_uri, root_path)
 		end
 
 		if request_method == "textDocument/didSave" then
-			parse_err = server.diagnostic(current_file, current_file_path, current_uri, root_uri)
+			parse_err = server.diagnostic(current_file, current_file_path, current_uri, root_path)
 		end
 
 		if request_method == "textDocument/didClose" then
@@ -108,14 +109,14 @@ while true do
 			current_file = server.did_change(documents, request_params, current_uri)
 			documents[current_uri] = current_file
 
-			parse_err = server.diagnostic(current_file, current_file_path, current_uri, root_uri)
+			parse_err = server.diagnostic(current_file, current_file_path, current_uri, root_path)
 		end
 
 		if request_method == "textDocument/hover" then
 			server.hover(
 				documents,
 				request_id,
-				root_uri,
+				root_path,
 				current_uri,
 				current_file_path,
 				current_file,
@@ -127,7 +128,7 @@ while true do
 
 		if request_method == "textDocument/definition" then
 			server.go_to_definition(
-				root_uri,
+				root_path,
 				request_params,
 				request_id,
 				documents,

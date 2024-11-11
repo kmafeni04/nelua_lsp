@@ -1,3 +1,6 @@
+# ARCHIVED
+Rewritten in [lua](https://github.com/kmafeni04/nelua-lsp)
+
 # Nelua LSP
 
 This is an early implementation of writing an LSP server the for [nelua](https://nelua.io) programming language
@@ -10,10 +13,8 @@ It is heavily reliant on git to work but I aim to improve on this as much as I c
 
 ## Goals
 
-- [x] Go to Definition (partial)
-  - TODO:
-    - Proper matching for function parameters
-    - No matching for comments and strings
+- [ ] Go to Definition
+  - Only works for require paths
 - [x] Hover (partial)
   - TODO:
     - Check for multiple declarations with different types but same identifier

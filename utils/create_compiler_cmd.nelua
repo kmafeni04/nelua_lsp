@@ -1,7 +1,6 @@
 require 'string'
 
 local function create_compiler_cmd(current_file: string, current_file_path: string, root_uri: string, cmd: string): string
-	local add_paths: string = #[require('nelua.configer').get_default().path]# .. ";"
 	local current_file_dir: string
 
 	local current_file_matched, current_file_seq = current_file_path:match("(.+/).+nelua")
@@ -10,12 +9,14 @@ local function create_compiler_cmd(current_file: string, current_file_path: stri
 	else
 		current_file_dir = root_uri
 	end
+
 	local add_file_path = root_uri .. "/?.nelua"
 	local add_init_path = root_uri .. "/?/init.nelua"
-	add_paths = add_paths .. add_file_path .. ";" .. add_init_path
+	local add_paths = add_file_path .. ";" .. add_init_path
 
 	local escaped_file = current_file:gsub("([$`\"\\])", "\\%1")
-	local command = "(cd " .. current_file_dir .. "; echo \"" .. escaped_file .. "\" | nelua --path \"" .. add_paths .. "\" " .. cmd .. " -) 2>&1"
+	
+	local command = "(cd " .. current_file_dir .. "; echo \"" .. escaped_file .. "\" | nelua -L \"" .. add_paths .. "\" " .. cmd .. " -) 2>&1"
 	return command
 end
 

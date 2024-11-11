@@ -81,11 +81,11 @@ local function create_diagnostic(analysis: string, analysis_match: string, sever
 	return diagnostic
 end
 
-local function diagnostic(current_file: string, current_file_path: string, current_uri: string, root_uri: string): boolean
+local function diagnostic(current_file: string, current_file_path: string, current_uri: string, root_path: string): boolean
 	local err: boolean = true
 
 	local escaped_file = current_file:gsub("([$`\"\\])", "\\%1")
-  local command = create_compiler_cmd(current_file, current_file_path, root_uri, "-a")
+  local command = create_compiler_cmd(current_file, current_file_path, root_path, "-a")
 	local analysis = io.popen(command):read("a")
 
 	if analysis:match(":%s*error:") then
